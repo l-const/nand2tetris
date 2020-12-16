@@ -40,4 +40,47 @@ CHIP CPU {
 
     PARTS:
     // Put your code here:
+    
+    Not(in=instruction[15], out=isA);
+    Not(in=isA, out=isC);
+
+    // isC and destination is A
+    And(a=isC, b=instruction[5], out=ALUtoA);
+
+    Mux16(a=instruction, b=out-alu, sel=ALUtoA, out=out-mux1);
+
+    //loadA if is an Ainstruction or is C but dest is A
+    Or(a=isA, b=ALUtoA, out=loadA);
+
+    ARegister(in=out-mux1, load=loadA, out=out-A, out[0..14]=addressM);
+
+    //loadA if is  C-instruction and dest is A
+    And(a=isC, b=instruction[4], out=loadD);
+    DRegister(in=out-alu, load=loadD, out=out-D);
+
+
+    Mux16(a=out-A, b=inM, sel=instruction[12], out=out-mux2);
+    ALU(x=out-D, y=out-mux2, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=out-alu, out=outM, zr=out-zr, ng=out-ng);
+    
+    
+    // if destination is M and instruction is C => write M
+    And(a=instruction[3], b=instruction[15], out=writeM);
+
+
+
+    // compute loadPC from control bits of ALU and jump bits of C-intstruction 
+    
+     // calc PCload & PCinc - whether to load PC with A reg
+     And(a=out-zr, b=instruction[1], out=jeq);    // is zero and jump if zero
+     And(a=out-ng, b=instruction[2], out=jlt);    // is neg and jump if neg
+     Or(a=out-zr, b=out-ng, out=zrOrng);
+     Not(in=zrOrng, out=positive);            // is positive (not zero and not neg)
+     And(a=positive, b=instruction[0], out=jgt); // is pos and jump if pos
+     Or(a=jeq, b=jlt, out=jle);
+     Or(a=jle, b=jgt, out=jumpToA);              // load PC if cond met and jump if cond
+     And(a=isC, b=jumpToA, out=loadPC); // Only jump if C instruction
+     Not(in=loadPC, out=increment);                  // only inc i
+    PC(in=out-A, load=loadPC, inc=increment, reset=reset, out[0..14]=pc);
+
+
 }
