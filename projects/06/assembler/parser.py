@@ -2,7 +2,8 @@
 Parser for the Hack Assembly language.
 """
 import sys
-from typing import List
+from typing import List, Optional
+from enum import Enum
 
 
 class Parser:
@@ -21,6 +22,9 @@ class Parser:
         self.lines = [s.replace(" ", "") for s in self.lines]
         self.counter = 0
 
+    def __str__(self) -> str:
+        return f"Parser(@{self.counter}/{len(self.lines) - 1})"
+
     def __clean_line_comments(self):
         """
         Cleans line comments and empty lines.
@@ -38,8 +42,10 @@ class Parser:
         Helper function.
         Writes intermidiate results from the different parsing stages.
         """
-        with open(self.filename + ".ir", "w+") as f:
-            f.writelines(["\n" + l if p != 0 else l for p, l in enumerate(self.lines)])
+        with open(self.filename + ".ir", "w+") as file:
+            file.writelines(
+                ["\n" + l if p != 0 else l for p, l in enumerate(self.lines)]
+            )
 
     def _loc(self) -> int:
         """
@@ -48,7 +54,10 @@ class Parser:
         """
         return len(self.lines)
 
-    def is_label(self) -< bool:
+    def _cur(self):
+        return self.lines[self.counter]
+
+    def _is_label(self) -> bool:
         """
         Checks if instruction is Label (END)
         """
@@ -56,14 +65,20 @@ class Parser:
             self.counter
         ].endswith(")")
 
-    def is_A(self):
+    def _is_a(self) -> bool:
         """
         Checks if is A-instruction: eg. @100 , @label
         """
         return self.lines[self.counter].startswith("@")
 
-    def is_C(self):
-        return not self.is_A() or self.is_label()
+    def _is_c(self) -> bool:
+        return not self._is_a() or self._is_label()
+
+    def has_more_commands(self):
+        """
+        Are there more commands in the input?
+        """
+        return self.counter < len(self.lines)
 
     def advance(self):
         """
@@ -71,14 +86,21 @@ class Parser:
         command. Should be called only if hasMoreCommands() is true.
         Initially there is no current command.
         """
-        pass
+        if self.has_more_commands():
+            self.counter += 1
+            # if self._is_label():
+            #    self.counter += 1
 
-    def command_type(self):
+    def command_type(self) -> Enum:
         """
         Returns the type of the current command: C_COMMAND, L_COMMAND
         or A_COMMAND.
         """
-        pass
+        if self._is_a():
+            return Command.A_COMMAND
+        if self._is_c():
+            return Command.C_COMMAND
+        return Command.L_COMMAND
 
     def symbol(self):
         """
@@ -86,19 +108,152 @@ class Parser:
         @Xxx or (Xxx) . Should be called only when commandType() is
         A_COMMAND or L_COMMAND.
         """
-        pass
+        if self._is_a() or self._is_label():
+            return self._cur().split("@")[1]
 
-    def dest(self):
+    def dest(self) -> Optional[str]:
         """
         Returns the dest mnemonic in the current C-command (8 possi-bilities).
          Should be called only when commandType() is C_COMMAND.
         """
-        pass
+        if self._is_c():
+            inst = self._cur()
+            if "=" in inst:
+                return inst.split("=")[0]
+
+    def comp(self) -> Optional[str]:
+        """
+        Returns the comp mnemonic in the current C-command (28 possi-bilities).
+         Should be called only when commandType() is C_COMMAND.
+        """
+        if self._is_c():
+            inst = self._cur()
+            if "=" in inst:
+                if ";" in inst:
+                    return inst.split("=")[1].split(";")[0]
+                else:
+                    return inst.split("=")[1]
+            elif ";" in inst:
+                return inst.split(";")[0]
+
+            return inst
+
+    def jump(self) -> Optional[str]:
+        """
+        Returns the jump mnemonic in the current C-command (8 possi-bilities).
+         Should be called only when commandType() is C_COMMAND.
+        """
+        if self._is_c():
+            inst = self._cur()
+            if ";" in inst:
+                return inst.split(";")[1]
 
 
-def test_parser():
-    parser = Parser(sys.argv[1])._write_to_file()
+class Command(Enum):
+    """
+    Enumeration with three variants.
+    Represisanting the three different  type of instructions
+    of Hack assembly.
+    """
+
+    A_COMMAND = 0
+    C_COMMAND = 1
+    L_COMMAND = 2
+
+
+def parser_demo():
+    par = Parser(sys.argv[1])  # ._write_to_file()
+
+    while par.has_more_commands():
+
+        print(
+            f"{par}, Current_inst: {par._cur()} dest: {par.dest()},   \
+         comp: {par.comp()},  jump: {par.jump()} , A-inst?: {par.symbol()}"
+        )
+        par.advance()
+
+
+def test_jump():
+    test_arr = [
+        None,
+        None,
+        None,
+        None,
+        None,
+        "JGT",
+        None,
+        None,
+        None,
+        "JMP",
+        None,
+        None,
+        None,
+        None,
+        None,
+        "JMP",
+    ]
+    par = Parser("../max/MaxL.asm")
+    i = 0
+    while par.has_more_commands():
+        assert par.jump() == test_arr[i]
+        par.advance()
+        i += 1
+
+
+def test_comp():
+    test_arr = [
+        None,
+        "M",
+        None,
+        "D-M",
+        None,
+        "D",
+        None,
+        "M",
+        None,
+        "0",
+        None,
+        "M",
+        None,
+        "D",
+        None,
+        "0",
+    ]
+    par = Parser("../max/MaxL.asm")
+    i = 0
+    while par.has_more_commands():
+        print(par.comp())
+        assert par.comp() == test_arr[i]
+        par.advance()
+        i += 1
+
+
+def test_dest():
+    test_arr = [
+        None,
+        "D",
+        None,
+        "D",
+        None,
+        None,
+        None,
+        "D",
+        None,
+        None,
+        None,
+        "D",
+        None,
+        "M",
+        None,
+        None,
+    ]
+    par = Parser("../max/MaxL.asm")
+    i = 0
+    while par.has_more_commands():
+        assert par.dest() == test_arr[i]
+        par.advance()
+        i += 1
 
 
 if __name__ == "__main__":
-    test_parser()
+    test_comp()
