@@ -35,26 +35,33 @@ class Assembler:
         # Re-initialize the parser
         parser.counter = 0
 
-    def process_address(self, addr: int):
-        pass
-
-
     def second_pass(self):
         parser = self.parser
         s_table = self.sym_table
         while parser.has_more_commands():
-            if parser.command_type() == Command.A_COMMAND and  not parser.symbol().isnumeric():
-                sym = parser.symbol()
+            sym = parser.symbol()
+            if parser.command_type() == Command.A_COMMAND and not sym.isnumeric():
+                # @sum
                 if not s_table.contains(sym):
                     s_table.add_entry(sym, self._base_symbol_addr)
+                    self._output[parser.counter] = f"{self._base_symbol_addr:016b}"
                     self._base_symbol_addr += 1
                 else:
                     addr = s_table.get_address(sym)
                     self._output[parser.counter] = f"{addr:016b}"
-
+            elif parser.command_type() == Command.A_COMMAND and sym.isnumeric():
+                # @100
+                self._output[parser.counter] = f"{sym:016b}"
             else:
                 # C command
-                pass        
+                jump_asm = parser.jump()
+                dest_asm = parser.dest()
+                comp_asm = parser.comp()
+                jump_hack = self.code_gen.jump(jump_asm)
+                dest_hack = self.code_gen.dest(dest_asm)
+                comp_hack = self.code_gen.comp(comp_asm)
+                self._output[parser.counter] = "111" + comp_hack + dest_hack + jump_hack
+
             parser.advance()
 
     def code_gen(self):
@@ -78,6 +85,7 @@ def main():
         # assembler.run()
     else:
         print("Please provide a filepath! -> $ python assembler.py [filepath]")
+
 
 if __name__ == "__main__":
     main()
