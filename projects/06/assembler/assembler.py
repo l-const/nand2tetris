@@ -73,7 +73,6 @@ class Assembler:
             out_f.writelines(
                 ["\n" + l if p != 0 else l for p, l in enumerate(self._output)]
             )
-            
 
     def run(self):
         self.first_pass()
@@ -88,9 +87,10 @@ def main():
     if len(sys.argv) > 1:
         assembler = Assembler(sys.argv[1])
         assembler.run()
-    
+
     else:
         print("Please provide a filepath! -> $ python assembler.py [filepath]")
+
 
 def test_until_first_pass():
     """
@@ -102,6 +102,7 @@ def test_until_first_pass():
     print(str(ass.parser) + "\n")
     print(ass.sym_table)
     return ass
+
 
 def test_until_second_pass():
     """

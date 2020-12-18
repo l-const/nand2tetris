@@ -24,7 +24,9 @@ class Parser:
         self.counter = 0
 
     def __str__(self) -> str:
-        return pformat(f"Parser([{self.counter}/{len(self.lines) - 1}]) ,Contents: {self.lines}.")
+        return pformat(
+            f"Parser([{self.counter}/{len(self.lines) - 1}]) ,Contents: {self.lines}."
+        )
 
     def __clean_line_comments(self):
         """
