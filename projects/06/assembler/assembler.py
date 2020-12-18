@@ -3,10 +3,18 @@ Module that deals with I/O.
 """
 import sys
 from typing import List
-from .parser import Command, Parser
-from .codegen import Code
-from .symbol_table import SymbolTable
+
+from parser import Command, Parser
+from codegen import Code
+from symbol_table import SymbolTable
 from pprint import pprint
+# import Parser, Command
+# import Code
+# import Symboltable
+#import Parser 
+#import Code 
+#import Command
+#import SymbolTable
 
 
 class Assembler:
@@ -21,14 +29,14 @@ class Assembler:
         parser = self.parser
         s_table = self.sym_table
         while parser.has_more_commands():
-            if parser._cur()._is_label():
+            if parser._is_label():
                 # if is label then:
                 # the label instruction must be removed
                 # and its position will  represent the new position
                 # the position that the next instruction will hold once removed
                 # the counter does not need to be increased
                 s_table.add_entry(parser._cur(), parser.counter)
-                parser.remove(parser._cur())
+                parser.lines.remove(parser._cur())
 
             else:
                 parser.advance()
@@ -87,5 +95,22 @@ def main():
         print("Please provide a filepath! -> $ python assembler.py [filepath]")
 
 
+def test_first_pass():
+    """
+    Test for the First pass.
+    """
+
+    ass = Assembler(sys.argv[1])
+    ass.first_pass()
+    print(str(ass.parser)+"\n")
+    print(ass.sym_table)
+
+def test_second_pass():
+    """
+    Test for the second pass.
+    """
+
+
 if __name__ == "__main__":
-    main()
+    test_first_pass()
+    #test_first_pass()

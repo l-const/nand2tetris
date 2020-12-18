@@ -5,6 +5,7 @@ addresses.
 
 
 from typing import Dict, Optional
+from pprint import pformat
 
 
 class SymbolTable:
@@ -39,10 +40,17 @@ class SymbolTable:
             "THAT": 4,
         }
 
+    def __str__(self) -> str:
+        return pformat(f"Symbol table[{len(self.table)}], Contents: {self.table}")
+
     def add_entry(self, symbol: str, address: int):
         """
         Adds the pair (symbol, address) to the table
         """
+        if "(" in symbol:
+            symbol = symbol.split("(")[1]
+            if ")" in symbol:
+                symbol = symbol.split(")")[0]
         self.table[symbol] = address
 
     def contains(self, symbol: str) -> bool:
@@ -65,6 +73,7 @@ def test_symbol_table():
     Test for the SymbolTable class.
     """
     sy_table = SymbolTable()
+    print(sy_table)
     assert len(sy_table.table) == 22
     sy_table.add_entry("test", 100)
     assert len(sy_table.table) == 23

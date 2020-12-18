@@ -4,6 +4,7 @@ Parser for the Hack Assembly language.
 import sys
 from typing import List, Optional
 from enum import Enum
+from pprint import pformat
 
 
 class Parser:
@@ -23,7 +24,7 @@ class Parser:
         self.counter = 0
 
     def __str__(self) -> str:
-        return f"Parser(@{self.counter}/{len(self.lines) - 1})"
+        return pformat(f"Parser([{self.counter}/{len(self.lines) - 1}]) ,Contents: {self.lines}.")
 
     def __clean_line_comments(self):
         """
@@ -225,7 +226,7 @@ def test_comp():
     par = Parser("../max/MaxL.asm")
     i = 0
     while par.has_more_commands():
-        print(par.comp())
+        # print(par.comp())
         assert par.comp() == test_arr[i]
         par.advance()
         i += 1
@@ -256,7 +257,3 @@ def test_dest():
         assert par.dest() == test_arr[i]
         par.advance()
         i += 1
-
-
-if __name__ == "__main__":
-    test_comp()
