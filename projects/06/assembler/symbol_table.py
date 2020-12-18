@@ -31,7 +31,7 @@ class SymbolTable:
             "R13": 13,
             "R14": 14,
             "R15": 15,
-            "SCREEN": 16834,
+            "SCREEN": 16384,
             "KBD": 24576,
             "SP": 0,
             "LCL": 1,
