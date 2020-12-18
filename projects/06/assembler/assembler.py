@@ -73,6 +73,7 @@ class Assembler:
             out_f.writelines(
                 ["\n" + l if p != 0 else l for p, l in enumerate(self._output)]
             )
+            
 
     def run(self):
         self.first_pass()

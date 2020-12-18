@@ -68,13 +68,13 @@ class Code:
         elif mnemonic == "D-1":
             result = "0001110"
         elif mnemonic == "A-1":
-            result = "0110011"
+            result = "0110010"
         elif mnemonic == "M-1":
-            result = "1110011"
+            result = "1110010"
         elif mnemonic == "D+A":
-            result = "0000110"
+            result = "0000010"
         elif mnemonic == "D+M":
-            result = "1000110"
+            result = "1000010"
         elif mnemonic == "D-A":
             result = "0010011"
         elif mnemonic == "D-M":
