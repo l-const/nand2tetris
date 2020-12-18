@@ -102,7 +102,7 @@ class Parser:
             return Command.C_COMMAND
         return Command.L_COMMAND
 
-    def symbol(self):
+    def symbol(self) -> Optional[str]:
         """
         Returns the symbol or decimal Xxx of the current command
         @Xxx or (Xxx) . Should be called only when commandType() is
@@ -120,6 +120,7 @@ class Parser:
             inst = self._cur()
             if "=" in inst:
                 return inst.split("=")[0]
+        return None
 
     def comp(self) -> Optional[str]:
         """
@@ -137,6 +138,7 @@ class Parser:
                 return inst.split(";")[0]
 
             return inst
+        return None
 
     def jump(self) -> Optional[str]:
         """
@@ -147,6 +149,7 @@ class Parser:
             inst = self._cur()
             if ";" in inst:
                 return inst.split(";")[1]
+        return None
 
 
 class Command(Enum):

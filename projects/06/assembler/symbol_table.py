@@ -73,4 +73,3 @@ def test_symbol_table():
     assert sy_table.get_address("SCREEN") == 16834
     assert sy_table.get_address("test") == 100
     assert sy_table.get_address("unkown") is None
-    
