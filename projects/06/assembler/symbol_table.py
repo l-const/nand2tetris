@@ -79,6 +79,6 @@ def test_symbol_table():
     assert len(sy_table.table) == 23
     assert sy_table.contains("test")
     assert not sy_table.contains("not_found")
-    assert sy_table.get_address("SCREEN") == 16834
+    assert sy_table.get_address("SCREEN") == 16384
     assert sy_table.get_address("test") == 100
     assert sy_table.get_address("unkown") is None
