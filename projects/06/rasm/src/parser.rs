@@ -138,20 +138,7 @@ impl Parser {
     }
 }
 
-// fn main() {
-//   let name = "MaxL.asm";
-//   let mut p = Parser::new(name);
-//   p.init();
-//   println!("{:?}", p.lines);
-//   let mut out = File::create("Rect.out").expect("could not write");
-//   p.lines.iter().for_each(|s| write!(out,"{}\n", s).expect("could not"));
-//   let frst = format!("{:#016b}", 32);
-//  let result =  frst.split("b")
-//   .nth(1)
-//   .unwrap();
-//   println!("{:?}", result);
-//   test_comp(&mut p);
-// }
+
 
 #[cfg(test)]
 mod test {
@@ -182,7 +169,6 @@ mod test {
         ];
         let mut count = 0;
         while p.has_more_commands() {
-            //println!("{:?}, {:?}",p.jump(), test_arr[count]);
             assert_eq!(p.jump(), test_arr[count]);
             p.advance();
             count += 1;
@@ -214,8 +200,6 @@ mod test {
         ];
         let mut count = 0;
         while p.has_more_commands() {
-            //println!("{:?}",p.cur_inst().contains(";"));
-            //println!("{:?}, {:?}",p.dest(), test_arr[count]);
             assert_eq!(p.dest(), test_arr[count]);
             p.advance();
             count += 1;
@@ -247,8 +231,6 @@ mod test {
         ];
         let mut count = 0;
         while p.has_more_commands() {
-            //println!("{:?}",p.cur_inst().contains(";"));
-            //println!("{:?}, {:?}",p.comp(), test_arr[count]);
             assert_eq!(p.comp(), test_arr[count]);
             p.advance();
             count += 1;
