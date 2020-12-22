@@ -28,7 +28,7 @@ def run(parsers, mode):
             while p.has_more_commands():
                 cmd_type = p.command_type()
                 if cmd_type == 2 or cmd_type == 3:
-                    c_writer.write_push_pop(p._cur()[0], p.arg1(), p.arg2())
+                    c_writer.write_push_pop(cmd_type, p.arg1(), p.arg2())
                 else:
                     c_writer.write_arithmetic(p._cur()[0])
                 p.advance()
@@ -38,7 +38,7 @@ def run(parsers, mode):
         while p.has_more_commands():
             cmd_type = p.command_type()
             if cmd_type == 2 or cmd_type == 3:
-                c_writer.write_push_pop(p._cur()[0], p.arg1(), p.arg2())
+                c_writer.write_push_pop(cmd_type, p.arg1(), p.arg2())
             else:
                 c_writer.write_arithmetic(p._cur()[0])
             p.advance()
