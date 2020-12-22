@@ -25,7 +25,7 @@ impl Assembler {
         let mut p = Parser::new(file);
         p.init();
         Assembler {
-            filename: filename,
+            filename,
             parser: p,
             code_gen: Code {},
             sym_table: SymbolTable::new(),
@@ -54,30 +54,30 @@ impl Assembler {
             if self.parser.command_type() == Cmd::ACommand
                 && cur_symbol
                     .chars()
-                    .fold(false, |acc, x| acc || !x.is_numeric())
+                    .any(|x| !x.is_numeric())
             {
                 // @sum
                 if !self.sym_table.contains(cur_symbol) {
                     self.sym_table
                         .add_entry(cur_symbol.to_owned(), self.symbol_adress);
                     let f_addr = format!("{:#018b}", self.symbol_adress);
-                    let f_out = f_addr.split("b").nth(1).unwrap().to_owned();
+                    let f_out = f_addr.split('b').nth(1).unwrap().to_owned();
                     self.out.push(f_out);
                     self.symbol_adress += 1;
                 } else {
                     let addr = self.sym_table.get_address(cur_symbol).unwrap();
                     let f_addr = format!("{:#018b}", addr);
-                    let f_out = f_addr.split("b").nth(1).unwrap().to_owned();
+                    let f_out = f_addr.split('b').nth(1).unwrap().to_owned();
                     self.out.push(f_out);
                 }
             } else if self.parser.command_type() == Cmd::ACommand
                 && cur_symbol
                     .chars()
-                    .fold(true, |acc, x| acc && x.is_numeric())
+                    .all(|x| x.is_numeric())
             {
                 // @100
                 let f_sym = format!("{:#018b}", cur_symbol.parse::<usize>().unwrap());
-                let f_out = f_sym.split("b").nth(1).unwrap().to_owned();
+                let f_out = f_sym.split('b').nth(1).unwrap().to_owned();
                 self.out.push(f_out);
             } else {
                 // C command
@@ -99,12 +99,12 @@ impl Assembler {
     }
 
     fn gen(&mut self) {
-        let mut name = self.filename.split(".").nth(0).unwrap().to_owned();
+        let mut name = self.filename.split('.').next().unwrap().to_owned();
         name.push_str(".hack");
-        let mut out = File::create(name).expect("Problem opeing output.file");
+        let mut out = File::create(name).expect("Problem opening output.file");
         self.out
             .iter()
-            .for_each(|s| write!(out, "{}\n", s).expect("Problem writing lines!"));
+            .for_each(|s| writeln!(out, "{}", s).expect("Problem writing lines!"));
     }
 
     fn run(&mut self) {

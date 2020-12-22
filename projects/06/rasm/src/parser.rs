@@ -20,7 +20,7 @@ impl Parser {
     pub(crate) fn new(filename: String) -> Self {
         Parser {
             counter: 0,
-            filename: filename,
+            filename,
             lines: vec![],
         }
     }
@@ -50,23 +50,23 @@ impl Parser {
             .lines
             .clone()
             .into_iter()
-            .filter(|x| !x.starts_with("/") && !x.is_empty())
+            .filter(|x| !x.starts_with('/') && !x.is_empty())
             .collect();
         // Remove whitespaces and inline comments from lines
         let _it: Vec<String> = _it
             .into_iter()
             .map(|x| Parser::my_filter(x))
-            .map(|x| x.replace(" ", "").to_string())
+            .map(|x| x.replace(" ", ""))
             .collect();
         self.lines = _it;
     }
 
     pub(crate) fn is_label(&self) -> bool {
-        self.lines[self.counter].starts_with("(") && self.lines[self.counter].ends_with(")")
+        self.lines[self.counter].starts_with('(') && self.lines[self.counter].ends_with(')')
     }
 
     fn is_a(&self) -> bool {
-        self.cur_inst().starts_with("@")
+        self.cur_inst().starts_with('@')
     }
 
     fn is_c(&self) -> bool {
@@ -94,19 +94,19 @@ impl Parser {
         if self.is_c() {
             return Cmd::CCommand;
         }
-        return Cmd::LCommand;
+        Cmd::LCommand
     }
 
     pub(crate) fn symbol(&self) -> Option<&str> {
         if self.is_a() || self.is_label() {
-            return Some(self.cur_inst().split("@").nth(1).unwrap());
+            return Some(self.cur_inst().split('@').nth(1).unwrap());
         }
         None
     }
 
     pub(crate) fn dest(&self) -> Option<&str> {
-        if self.is_c() && self.cur_inst().contains("=") {
-            return Some(self.cur_inst().split("=").nth(0).unwrap());
+        if self.is_c() && self.cur_inst().contains('=') {
+            return Some(self.cur_inst().split('=').next().unwrap());
         }
         None
     }
@@ -114,25 +114,25 @@ impl Parser {
     pub(crate) fn comp(&self) -> Option<&str> {
         if self.is_c() {
             let inst = self.cur_inst();
-            if inst.contains("=") {
-                let inst = inst.split("=").nth(1).unwrap();
-                if inst.contains(";") {
-                    return Some(inst.split(";").nth(0).unwrap());
+            if inst.contains('=') {
+                let inst = inst.split('=').nth(1).unwrap();
+                if inst.contains(';') {
+                    return Some(inst.split(';').next().unwrap());
                 }
                 return Some(inst);
             }
-            if inst.contains(";") {
-                return Some(inst.split(";").nth(0).unwrap());
+            if inst.contains(';') {
+                return Some(inst.split(';').next().unwrap());
             }
 
             return Some(inst);
         }
-        return None;
+        None
     }
 
     pub(crate) fn jump(&self) -> Option<&str> {
-        if self.is_c() && self.cur_inst().contains(";") {
-            return Some(self.cur_inst().split(";").nth(1).unwrap());
+        if self.is_c() && self.cur_inst().contains(';') {
+            return Some(self.cur_inst().split(';').nth(1).unwrap());
         }
         None
     }

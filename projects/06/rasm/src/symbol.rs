@@ -38,10 +38,10 @@ impl SymbolTable {
     }
 
     pub(crate) fn add_entry(&mut self, mut symbol: String, address: usize) {
-        if symbol.contains("(") {
-            symbol = symbol.split("(").nth(1).unwrap().to_owned();
-            if symbol.contains(")") {
-                symbol = symbol.split(")").nth(0).unwrap().to_owned();
+        if symbol.contains('(') {
+            symbol = symbol.split('(').nth(1).unwrap().to_owned();
+            if symbol.contains(')') {
+                symbol = symbol.split(')').next().unwrap().to_owned();
             }
         }
         self.table.insert(symbol, address);
