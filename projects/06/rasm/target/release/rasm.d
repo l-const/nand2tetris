@@ -1,0 +1,1 @@
+/home/kon/Desktop/nand2tetris/projects/06/rasm/target/release/rasm: /home/kon/Desktop/nand2tetris/projects/06/rasm/src/code_gen.rs /home/kon/Desktop/nand2tetris/projects/06/rasm/src/main.rs /home/kon/Desktop/nand2tetris/projects/06/rasm/src/parser.rs /home/kon/Desktop/nand2tetris/projects/06/rasm/src/symbol.rs
