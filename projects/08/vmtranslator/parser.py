@@ -34,16 +34,6 @@ class Parser:
         """
         self.lines = [l.split("//")[0] if "//" in l else l for l in self.lines]
 
-    def _write_to_file(self):
-        """
-        Helper function.
-        Writes intermidiate results from the different parsing stages.
-        """
-        with open(self.filename + ".asm", "w+") as file:
-            file.writelines(
-                ["\n" + l if p != 0 else l for p, l in enumerate(self.lines)]
-            )
-
     def _cur(self):
         return self.lines[self.counter]
 
@@ -115,20 +105,3 @@ class Parser:
             or c_type == C_CALL
         ):
             return int(self._cur()[2])
-
-
-def parser_main():
-
-    if len(sys.argv) > 1:
-        par = Parser(sys.argv[1])
-        # par._write_to_file()
-        while par.has_more_commands():
-
-            print(par._cur(), par.command_type(), par.arg2())
-            par.advance()
-    else:
-        print("Please specify filename: => python3 parser.py [filename] ")
-
-
-if __name__ == "__main__":
-    parser_main()
