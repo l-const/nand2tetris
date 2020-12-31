@@ -1,0 +1,1 @@
+/home/kostas/Desktop/nand2tetris/projects/10/compiler_rs/target/debug/monkey_rs: /home/kostas/Desktop/nand2tetris/projects/10/compiler_rs/src/lexer.rs /home/kostas/Desktop/nand2tetris/projects/10/compiler_rs/src/main.rs /home/kostas/Desktop/nand2tetris/projects/10/compiler_rs/src/repl.rs /home/kostas/Desktop/nand2tetris/projects/10/compiler_rs/src/token.rs
