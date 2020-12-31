@@ -43,14 +43,12 @@ impl Lexer {
             b'~' => Token::new(token::NOT, std::slice::from_ref(&self.ch)),
             b'/' => {
                 let n_char = self.peek_char();
-                if n_char == b'/' ||n_char == b'*' {
+                if n_char == b'/' || n_char == b'*' {
                     self.skip_comments()
-                } 
-                else { 
+                } else {
                     Token::new(token::SLASH, std::slice::from_ref(&self.ch))
                 }
-            },
-
+            }
 
             b'"' => Token {
                 Type: token::STRING_CONST,
@@ -112,7 +110,7 @@ impl Lexer {
 
         // in line comment
         if self.peek_char() == b'/' {
-            while self.ch  != b'\n' && self.ch != b'0' {
+            while self.ch != b'\n' && self.ch != b'0' {
                 self.advance();
             }
         }
@@ -123,14 +121,13 @@ impl Lexer {
                 self.advance(); // cur second *
             }
             self.advance(); // overcome *
-            while self.ch != b'*' && self.ch != b'0' {
+            while (self.ch != b'*' || self.peek_char() != b'/') && self.ch != b'0' {
                 self.advance();
             }
             self.advance() // got to / token
         }
 
         self.next_token()
-
     }
 
     fn read_identifier(&mut self) -> &str {
@@ -163,25 +160,29 @@ impl Lexer {
         while self.has_more_tokens() {
             let token = self.next_token();
             if token.Type != token::EOF {
-                    let out = match token.token_type() {
-                    TokenKind::Keyword(s) => format!("<keyword> {} </keyword>", s),
-                    TokenKind::Symbol(s) => {
-                        if token.Type == token::GT {
-                            format!("<symbol> {} </symbol>", "&gt;")
-                        } else if token.Type == token::LT {
-                            format!("<symbol> {} </symbol>", "&lt;")
-                        } else if token.Type == token::AND {
-                            format!("<symbol> {} </symbol>", "&amp;")
-                        } else {
-                            format!("<symbol> {} </symbol>", s)
-                        }
-                    }
-                    TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>", s),
-                    TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>", s),
-                    TokenKind::Identifier(s) => format!("<identifier> {} </identifier>", s),
-                };
-                println!("{}", out);
-        }  }
+                println!("{}", Lexer::token_to_xml(token));
+            }
+        }
+    }
+
+    pub(crate) fn token_to_xml(token: Token) -> String {
+        match token.token_type() {
+            TokenKind::Keyword(s) => format!("<keyword> {} </keyword>", s),
+            TokenKind::Symbol(s) => {
+                if token.Type == token::GT {
+                    format!("<symbol> {} </symbol>", "&gt;")
+                } else if token.Type == token::LT {
+                    format!("<symbol> {} </symbol>", "&lt;")
+                } else if token.Type == token::AND {
+                    format!("<symbol> {} </symbol>", "&amp;")
+                } else {
+                    format!("<symbol> {} </symbol>", s)
+                }
+            }
+            TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>", s),
+            TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>", s),
+            TokenKind::Identifier(s) => format!("<identifier> {} </identifier>", s),
+        }
     }
 }
 
@@ -192,4 +193,3 @@ fn is_letter(ch: u8) -> bool {
 fn is_digit(ch: u8) -> bool {
     b'0' <= ch && ch <= b'9'
 }
-
