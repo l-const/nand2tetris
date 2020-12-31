@@ -1,11 +1,4 @@
-struct  Parser;
-
-
-
-
-
-
-
+struct Parser;
 
 impl Parser {
     fn new(input: String, out: String) -> Parser;
@@ -23,7 +16,6 @@ impl Parser {
     // compiles a (possibly empty) parameter
     //list, not including the enclosing “()”.
     fn compile_vardec(&mut self);
-
 
     fn compile_statements(&mut self);
 

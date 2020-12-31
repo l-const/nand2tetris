@@ -26,7 +26,6 @@ impl Lexer {
             b'=' => Token::new(token::EQ, std::slice::from_ref(&self.ch)),
             b'+' => Token::new(token::PLUS, std::slice::from_ref(&self.ch)),
             b'-' => Token::new(token::MINUS, std::slice::from_ref(&self.ch)),
-            b'/' => Token::new(token::SLASH, std::slice::from_ref(&self.ch)),
             b'*' => Token::new(token::ASTERISK, std::slice::from_ref(&self.ch)),
             b'<' => Token::new(token::LT, std::slice::from_ref(&self.ch)),
             b'>' => Token::new(token::GT, std::slice::from_ref(&self.ch)),
@@ -42,6 +41,7 @@ impl Lexer {
             b'&' => Token::new(token::AND, std::slice::from_ref(&self.ch)),
             b'|' => Token::new(token::OR, std::slice::from_ref(&self.ch)),
             b'~' => Token::new(token::NOT, std::slice::from_ref(&self.ch)),
+            b'/' => Token::new(token::SLASH, std::slice::from_ref(&self.ch)),
             b'"' => Token {
                 Type: token::STRING_CONST,
                 Literal: self.read_string(),
@@ -97,9 +97,31 @@ impl Lexer {
         }
     }
 
-    fn skip_comments(&mut self) {
-        // three type of comments
-    }
+    // fn skip_comments(&mut self) -> Token {
+    //     // three type of comments
+
+    //     // in line comment
+    //     if self.peek_char() == b'/' {
+    //         while self.ch  != b'\n' {
+    //             self.advance();
+    //         }
+    //     }
+    //     // block comment and api
+    //     if self.peek_char() == b'*' {
+    //         self.advance(); // cur = first *
+    //         if self.peek_char() == b'*' {
+    //             self.advance(); // cur second *
+    //         }
+    //         self.advance(); // overcome *
+    //         while self.ch != b'*' {
+    //             self.advance();
+    //         }
+    //         self.advance() // got to / token
+    //     }
+
+    //     self.next_token()
+
+    // }
 
     fn read_identifier(&mut self) -> &str {
         let position = self.position;
@@ -118,6 +140,8 @@ impl Lexer {
     }
 
     fn read_string(&mut self) -> &str {
+        println!("{:?}", self.ch);
+        self.advance();
         let position = self.position;
         while self.ch != b'"' {
             self.advance()
@@ -126,15 +150,24 @@ impl Lexer {
     }
 
     pub(crate) fn tokenize(&mut self) {
-        //println!("{}", self.input.len());
-        while  self.has_more_tokens() {
+        while self.has_more_tokens() {
             let token = self.next_token();
-            let out  = match token.token_type() {
-                TokenKind::Keyword(s) => format!("<keyword>{}</keyword", s),
-                TokenKind::Symbol(s) => format!("<symbol>{}</symbol>", s),
-                TokenKind::Integer(s) => format!("<integerConstant>{}</integerConstant>", s),
-                TokenKind::StringC(s) => format!("<stringConstant>{}</stringConstant", s),
-                TokenKind::Identifier(s) => format!("<identifier>{}</identifier", s),
+            let out = match token.token_type() {
+                TokenKind::Keyword(s) => format!("<keyword> {} </keyword>", s),
+                TokenKind::Symbol(s) => {
+                    if token.Type == token::GT {
+                        format!("<symbol> {} </symbol>", "&gt;")
+                    } else if token.Type == token::LT {
+                        format!("<symbol> {} </symbol>", "&lt;")
+                    } else if token.Type == token::AND {
+                        format!("<symbol> {} </symbol>", "&amp;")
+                    } else {
+                        format!("<symbol> {} </symbol>", s)
+                    }
+                }
+                TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>", s),
+                TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>", s),
+                TokenKind::Identifier(s) => format!("<identifier> {} </identifier>", s),
             };
             println!("{}", out);
         }
@@ -148,3 +181,4 @@ fn is_letter(ch: u8) -> bool {
 fn is_digit(ch: u8) -> bool {
     b'0' <= ch && ch <= b'9'
 }
+
