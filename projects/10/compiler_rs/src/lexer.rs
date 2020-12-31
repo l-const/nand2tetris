@@ -41,7 +41,17 @@ impl Lexer {
             b'&' => Token::new(token::AND, std::slice::from_ref(&self.ch)),
             b'|' => Token::new(token::OR, std::slice::from_ref(&self.ch)),
             b'~' => Token::new(token::NOT, std::slice::from_ref(&self.ch)),
-            b'/' => Token::new(token::SLASH, std::slice::from_ref(&self.ch)),
+            b'/' => {
+                let n_char = self.peek_char();
+                if n_char == b'/' ||n_char == b'*' {
+                    self.skip_comments()
+                } 
+                else { 
+                    Token::new(token::SLASH, std::slice::from_ref(&self.ch))
+                }
+            },
+
+
             b'"' => Token {
                 Type: token::STRING_CONST,
                 Literal: self.read_string(),
@@ -97,31 +107,31 @@ impl Lexer {
         }
     }
 
-    // fn skip_comments(&mut self) -> Token {
-    //     // three type of comments
+    fn skip_comments(&mut self) -> Token {
+        // three type of comments
 
-    //     // in line comment
-    //     if self.peek_char() == b'/' {
-    //         while self.ch  != b'\n' {
-    //             self.advance();
-    //         }
-    //     }
-    //     // block comment and api
-    //     if self.peek_char() == b'*' {
-    //         self.advance(); // cur = first *
-    //         if self.peek_char() == b'*' {
-    //             self.advance(); // cur second *
-    //         }
-    //         self.advance(); // overcome *
-    //         while self.ch != b'*' {
-    //             self.advance();
-    //         }
-    //         self.advance() // got to / token
-    //     }
+        // in line comment
+        if self.peek_char() == b'/' {
+            while self.ch  != b'\n' && self.ch != b'0' {
+                self.advance();
+            }
+        }
+        // block comment and api
+        if self.peek_char() == b'*' {
+            self.advance(); // cur = first *
+            if self.peek_char() == b'*' {
+                self.advance(); // cur second *
+            }
+            self.advance(); // overcome *
+            while self.ch != b'*' && self.ch != b'0' {
+                self.advance();
+            }
+            self.advance() // got to / token
+        }
 
-    //     self.next_token()
+        self.next_token()
 
-    // }
+    }
 
     fn read_identifier(&mut self) -> &str {
         let position = self.position;
@@ -152,25 +162,26 @@ impl Lexer {
     pub(crate) fn tokenize(&mut self) {
         while self.has_more_tokens() {
             let token = self.next_token();
-            let out = match token.token_type() {
-                TokenKind::Keyword(s) => format!("<keyword> {} </keyword>", s),
-                TokenKind::Symbol(s) => {
-                    if token.Type == token::GT {
-                        format!("<symbol> {} </symbol>", "&gt;")
-                    } else if token.Type == token::LT {
-                        format!("<symbol> {} </symbol>", "&lt;")
-                    } else if token.Type == token::AND {
-                        format!("<symbol> {} </symbol>", "&amp;")
-                    } else {
-                        format!("<symbol> {} </symbol>", s)
+            if token.Type != token::EOF {
+                    let out = match token.token_type() {
+                    TokenKind::Keyword(s) => format!("<keyword> {} </keyword>", s),
+                    TokenKind::Symbol(s) => {
+                        if token.Type == token::GT {
+                            format!("<symbol> {} </symbol>", "&gt;")
+                        } else if token.Type == token::LT {
+                            format!("<symbol> {} </symbol>", "&lt;")
+                        } else if token.Type == token::AND {
+                            format!("<symbol> {} </symbol>", "&amp;")
+                        } else {
+                            format!("<symbol> {} </symbol>", s)
+                        }
                     }
-                }
-                TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>", s),
-                TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>", s),
-                TokenKind::Identifier(s) => format!("<identifier> {} </identifier>", s),
-            };
-            println!("{}", out);
-        }
+                    TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>", s),
+                    TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>", s),
+                    TokenKind::Identifier(s) => format!("<identifier> {} </identifier>", s),
+                };
+                println!("{}", out);
+        }  }
     }
 }
 
