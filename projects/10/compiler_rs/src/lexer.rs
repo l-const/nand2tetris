@@ -126,7 +126,7 @@ impl Lexer {
     }
 
     pub(crate) fn tokenize(&mut self) {
-        println!("{}", self.input.len());
+        //println!("{}", self.input.len());
         while  self.has_more_tokens() {
             let token = self.next_token();
             let out  = match token.token_type() {

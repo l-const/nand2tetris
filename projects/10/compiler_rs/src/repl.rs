@@ -9,7 +9,8 @@ pub(crate) fn start() -> io::Result<()> {
     let buffer_out = String::from(PROMPT);
     let stdin = io::stdin();
     let mut stdout = io::stdout();
-
+    println!("Hello!This is the Jack programming language!");
+    println!("Feel free to type in commands");
     loop {
         stdout
             .write(&buffer_out.as_bytes())
