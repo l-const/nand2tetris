@@ -127,6 +127,13 @@ impl Parser {
     }
 
     // fn read_new_line(&mut self) {
-    //     self.lex = lex
+    //     self.reader
     // }
+
+    // fn write(&mut self, info: &str) {
+    //    self.writer.write(info.as_bytes()).expect();
+    //}
+    //
+    //
+
 }
