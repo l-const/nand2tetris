@@ -140,7 +140,7 @@ impl Lexer {
         }
     }
 
-    fn has_more_tokens(&self) -> bool {
+    pub(crate) fn has_more_tokens(&self) -> bool {
         self.read_position < self.input.len()
     }
 

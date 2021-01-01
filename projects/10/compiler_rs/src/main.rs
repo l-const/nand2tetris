@@ -69,5 +69,3 @@ fn file_io_lexer(input_path: String) -> std::io::Result<()> {
         line.clear();
     }
 }
-
-fn parsing() {}
