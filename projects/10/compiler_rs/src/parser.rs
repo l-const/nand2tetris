@@ -124,6 +124,17 @@ impl Parser {
         // LBRACE
         self.compile_term();
 
+        while !self.peek_token_is(token::LET)
+            || !self.peek_token_is(token::WHILE)
+            || !self.peek_token_is(token::DO)
+            || !self.peek_token_is(token::RETURN)
+            || !self.peek_token_is(token::IF)
+        {
+            self.compile_vardec();
+        }
+
+        self.compile_statements();
+
         // RBRACE
         self.compile_term();
         self.write("</subroutineBodyDec>\n");
@@ -134,7 +145,7 @@ impl Parser {
         // compiles a (possibly empty) parameter
         //list, not including the enclosing “()”.
         self.write("<parameterList>\n");
-        
+
         while !self.peek_token_is(token::RPAREN) {
             self.compile_term();
         }
@@ -142,43 +153,103 @@ impl Parser {
         self.write("</parameterList>\n");
     }
 
-    fn compile_vardec(&mut self) {}
+    fn compile_vardec(&mut self) {
+        self.write("<varDec>\n");
+        while !self.cur_token_is(token::SEMICOLON) {
+            self.compile_term();
+        }
+        // SEMICOLON
+        self.compile_term();
+        self.write("</varDec>\n");
+    }
 
     fn compile_statements(&mut self) {
         self.write("<statements>\n");
 
-
-
-
         self.write("</statements>\n");
-
     }
 
-    fn compile_do(&mut self) {}
+    fn compile_do(&mut self) {
+        self.write("<doStatement>\n");
+        // keyword do
+        self.compile_term();
+        while self.cur_token_is(token::LPAREN) {
+            self.compile_term();
+        }
+        self.compile_expression_list();
+        // RPAREN SYMBOL
+        self.compile_term();
+        // SEMICOLON SYMBOL
+        self.compile_term();
+        self.write("</doStatement>\n");
+    }
 
-    fn compile_let(&mut self) {}
+    fn compile_let(&mut self) {
+        self.write("<letStatement>\n");
+        self.compile_term(); //let keyword'
+        self.compile_term(); //varName identifier'
+        if self.peek_token_is(token::LBRACKET) {
+            // lparen
+            self.compile_term();
+            self.compile_expression();
+            // rparen
+            self.compile_term();
+        }
+        self.compile_term(); // -> = symbol equal
+        self.compile_expression();
+        self.compile_term(); //-> semicolon
+        self.write("</letStatement>\n");
+    }
 
     fn compile_while(&mut self) {
         //compiles a sequence of statements, not
         // including the enclosing “{}”.
+        self.write("<whileStatement>\n");
+        self.compile_term(); //while keyword'
+        self.compile_term(); // '(' symbol
+        self.compile_expression();
+        self.compile_term(); // ')' keyword'
+        self.compile_term(); // '{' symbol
+        self.compile_statements();
+        self.compile_term(); // '}' symbol
+        self.write("</whileStatement>\n");
     }
 
     fn compile_return(&mut self) {
-        // <returnStatement>
-        // self.compile_term ''return keyword'
-        // self.compile_expression
-        // self.compile_term -> semicolon
-        // </returnStatement>
+        self.write("<returnStatement>\n");
+        self.compile_term(); //return keyword'
+        if !self.peek_token_is(token::SEMICOLON) {
+            self.compile_expression();
+        }
+        self.compile_term(); //-> semicolon
+        self.write("</returnStatement>\n");
     }
 
     fn compile_if(&mut self) {
-        // <ifStatement>
         // compiles an if statement, possibly
         //with a trailing else clause.
-        // </ifStatement>
+        self.write("<ifStatement>\n");
+        self.compile_term(); //if  keyword'
+        self.compile_term(); // '(' symbol
+        self.compile_expression();
+        self.compile_term(); // ')' keyword'
+        self.compile_term(); // '{' symbol
+        self.compile_statements();
+        self.compile_term(); // '}' symbol
+        if self.peek_token_is(token::ELSE) {
+            self.compile_term(); // else keyword
+            self.compile_term(); // '{' symbol
+            self.compile_statements();
+            self.compile_term(); // '}' symbol
+        }
+        self.write("</ifStatement>\n");
     }
 
-    fn compile_expression(&mut self) {}
+    fn compile_expression(&mut self) {
+        self.write("<expression>\n");
+
+        self.write("</expression>\n");
+    }
 
     fn compile_term(&mut self) {
         self.next_token();
