@@ -66,8 +66,8 @@ impl Parser {
             if self.peek_token_is(token::FIELD) || self.peek_token_is(token::STATIC) {
                 self.compile_class_vardec();
             } else {
-                //self.compile_subroutine();
-                self.next_token();
+                self.compile_subroutine();
+                //self.next_token();
             }
         }
         // symbol '}'
@@ -125,10 +125,10 @@ impl Parser {
         self.compile_term();
 
         while !self.peek_token_is(token::LET)
-            || !self.peek_token_is(token::WHILE)
-            || !self.peek_token_is(token::DO)
-            || !self.peek_token_is(token::RETURN)
-            || !self.peek_token_is(token::IF)
+            && !self.peek_token_is(token::WHILE)
+            && !self.peek_token_is(token::DO)
+            && !self.peek_token_is(token::RETURN)
+            && !self.peek_token_is(token::IF)
         {
             self.compile_vardec();
         }
@@ -165,7 +165,22 @@ impl Parser {
 
     fn compile_statements(&mut self) {
         self.write("<statements>\n");
+        while !self.peek_token_is(token::RBRACE) {
+            if self.peek_token_is(token::IF) {
+                self.compile_if();
+            } else if self.peek_token_is(token::DO) {
+                self.compile_do();
+            } else if self.peek_token_is(token::WHILE) {
+                self.compile_while();
+            } else if self.peek_token_is(token::LET) {
+                self.compile_let();
 
+            } else {
+                self.compile_return();
+            }
+        }
+
+        self.compile_term(); // rbrace }
         self.write("</statements>\n");
     }
 
@@ -247,7 +262,20 @@ impl Parser {
 
     fn compile_expression(&mut self) {
         self.write("<expression>\n");
-
+        self.write("<term>\n");
+        if self.peek_token_is(token::LPAREN){
+            self.compile_term(); // lparen
+            self.compile_expression(); //expression
+            self.compile_term(); // rparen
+        } else {
+            self.compile_term();
+        }
+        self.write("</term>\n");
+        if self.peek_token_is(token::LPAREN){
+            self.compile_term(); // lparen
+            self.compile_expression(); //expression
+            self.compile_term(); // rparen
+        }
         self.write("</expression>\n");
     }
 
@@ -276,12 +304,34 @@ impl Parser {
                 self.write(&s);
             }
         }
+        if self.peek_token_is(token::LBRACKET) && self.peek_token_is(token::IDENT) {
+            self.compile_term(); // symbol [
+            self.compile_expression(); 
+            self.compile_term(); // symbol ]
+        } else if self.peek_token_is(token::DOT) && self.peek_token_is(token::IDENT) {
+            self.compile_term(); // symbol .
+            self.compile_term(); // identifier
+            self.compile_term(); // ( symbol
+            self.compile_expression_list();
+            self.compile_term(); // ) symbol    
+        } else{
+
+        }
         //self.cur_token.toke_type.to_string()
     }
 
     fn compile_expression_list(&mut self) {
         // compiles a (possibly empty) comma-
         // separated list of expressions.
+        self.write("<expressionList>\n");
+        while !self.peek_token_is(token::RPAREN) {
+            self.compile_expression();
+            if self.peek_token_is(token::COMMA) {
+                self.compile_term();
+            }
+           
+        }
+        self.write("</expressionList>\n");
     }
     fn next_token(&mut self) {
         if let Some(t) = self.lex.next_token() {
