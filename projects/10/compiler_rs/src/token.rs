@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 pub type TokenType = &'static str;
 
 pub(crate) enum TokenKind {
@@ -6,6 +8,18 @@ pub(crate) enum TokenKind {
     Integer(String),
     StringC(String),
     Identifier(String),
+}
+
+impl Display for TokenKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TokenKind::Keyword(s) => write!(f, "<keyword> {} </keyword>\n", s),
+            TokenKind::Symbol(s) => write!(f, "<symbol> {} </symbol>\n", s),
+            TokenKind::Integer(s) => write!(f, "<integerConstant> {} </integerConstant>\n", s),
+            TokenKind::StringC(s) => write!(f, "<stringConstant> {} </stringConstant>\n", s),
+            TokenKind::Identifier(s) => write!(f, "<identifier> {} </identifier>\n", s),
+        }
+    }
 }
 
 pub(crate) const ILLEGAL: &'static str = "ILLEGAL";
@@ -65,7 +79,7 @@ pub(crate) const ELSE: TokenType = "ELSE";
 pub(crate) const WHILE: TokenType = "WHILE";
 pub(crate) const RETURN: TokenType = "RETURN";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Token {
     pub(crate) Type: String,
     pub(crate) Literal: String,

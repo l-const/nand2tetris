@@ -5,6 +5,9 @@ mod repl;
 #[allow(dead_code)]
 mod token;
 
+#[allow(dead_code)]
+mod parser;
+
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
@@ -12,12 +15,12 @@ use std::io::{BufReader, BufWriter};
 use token::Token;
 
 fn main() {
-    file_io(String::from("tokenizer_tests/Array.jack")).unwrap();
-    file_io(String::from("tokenizer_tests/Square.jack")).unwrap();
-    file_io(String::from("tokenizer_tests/SquareGame.jack")).unwrap();
+    file_io_lexer(String::from("tokenizer_tests/Array.jack")).unwrap();
+    file_io_lexer(String::from("tokenizer_tests/Square.jack")).unwrap();
+    file_io_lexer(String::from("tokenizer_tests/SquareGame.jack")).unwrap();
 }
 
-fn file_io(input_path: String) -> std::io::Result<()> {
+fn file_io_lexer(input_path: String) -> std::io::Result<()> {
     let out_path = input_path.split(".").next().unwrap().to_string() + ".xml";
     let in_f = File::open(&input_path).expect("Couldn't open file!");
     let out_f = File::create(&out_path).expect("Couldn't create file!");
@@ -66,3 +69,5 @@ fn file_io(input_path: String) -> std::io::Result<()> {
         line.clear();
     }
 }
+
+fn parsing() {}
