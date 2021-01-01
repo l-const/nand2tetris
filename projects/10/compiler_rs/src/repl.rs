@@ -14,9 +14,9 @@ pub(crate) fn start() -> io::Result<()> {
     loop {
         stdout
             .write(&buffer_out.as_bytes())
-            .expect("Could't write line");
+            .expect("Couldn't write line");
         stdout.flush()?;
-        stdin.read_line(&mut buffer_in).expect("Could't read line");
+        stdin.read_line(&mut buffer_in).expect("Couldn't read line");
         // logic
 
         let mut lex = Lexer::new(buffer_in.clone());

@@ -3,7 +3,7 @@ use token::{Token, TokenKind};
 use crate::token;
 #[derive(Debug)]
 pub(crate) struct Lexer {
-    input: String,
+    pub input: String,
     position: usize,      // current position in input (points to current char)
     read_position: usize, // current reading position in input (after current char)
     ch: u8,               // current char under examination
@@ -23,52 +23,118 @@ impl Lexer {
         self.advance();
         self.skip_whitespace();
         match self.ch {
-            b'=' => Some(Token::new(token::EQ, std::slice::from_ref(&self.ch))),
-            b'+' => Some(Token::new(token::PLUS, std::slice::from_ref(&self.ch))),
-            b'-' => Some(Token::new(token::MINUS, std::slice::from_ref(&self.ch))),
-            b'*' => Some(Token::new(token::ASTERISK, std::slice::from_ref(&self.ch))),
-            b'<' => Some(Token::new(token::LT, std::slice::from_ref(&self.ch))),
-            b'>' => Some(Token::new(token::GT, std::slice::from_ref(&self.ch))),
-            b'.' => Some(Token::new(token::DOT, std::slice::from_ref(&self.ch))),
-            b';' => Some(Token::new(token::SEMICOLON, std::slice::from_ref(&self.ch))),
-            b',' => Some(Token::new(token::COMMA, std::slice::from_ref(&self.ch))),
-            b'{' => Some(Token::new(token::LBRACE, std::slice::from_ref(&self.ch))),
-            b'}' => Some(Token::new(token::RBRACE, std::slice::from_ref(&self.ch))),
-            b'(' => Some(Token::new(token::LPAREN, std::slice::from_ref(&self.ch))),
-            b')' => Some(Token::new(token::RPAREN, std::slice::from_ref(&self.ch))),
-            b'[' => Some(Token::new(token::LBRACKET, std::slice::from_ref(&self.ch))),
-            b']' => Some(Token::new(token::RBRACKET, std::slice::from_ref(&self.ch))),
-            b'&' => Some(Token::new(token::AND, std::slice::from_ref(&self.ch))),
-            b'|' => Some(Token::new(token::OR, std::slice::from_ref(&self.ch))),
-            b'~' => Some(Token::new(token::NOT, std::slice::from_ref(&self.ch))),
+            b'=' => Some(Token::new(
+                String::from(token::EQ),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'+' => Some(Token::new(
+                String::from(token::PLUS),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'-' => Some(Token::new(
+                String::from(token::MINUS),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'*' => {
+                if self.position == 1 {
+                    self.skip_comments()
+                } else {
+                    Some(Token::new(
+                        String::from(token::ASTERISK),
+                        std::slice::from_ref(&self.ch).to_vec(),
+                    ))
+                }
+            }
+            b'<' => Some(Token::new(
+                String::from(token::LT),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'>' => Some(Token::new(
+                String::from(token::GT),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'.' => Some(Token::new(
+                String::from(token::DOT),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b';' => Some(Token::new(
+                String::from(token::SEMICOLON),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b',' => Some(Token::new(
+                String::from(token::COMMA),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'{' => Some(Token::new(
+                String::from(token::LBRACE),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'}' => Some(Token::new(
+                String::from(token::RBRACE),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'(' => Some(Token::new(
+                String::from(token::LPAREN),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b')' => Some(Token::new(
+                String::from(token::RPAREN),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'[' => Some(Token::new(
+                String::from(token::LBRACKET),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b']' => Some(Token::new(
+                String::from(token::RBRACKET),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'&' => Some(Token::new(
+                String::from(token::AND),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'|' => Some(Token::new(
+                String::from(token::OR),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
+            b'~' => Some(Token::new(
+                String::from(token::NOT),
+                std::slice::from_ref(&self.ch).to_vec(),
+            )),
             b'/' => {
                 let n_char = self.peek_char();
                 if n_char == b'/' || n_char == b'*' {
                     self.skip_comments()
                 } else {
-                    Some(Token::new(token::SLASH, std::slice::from_ref(&self.ch)))
+                    Some(Token::new(
+                        String::from(token::SLASH),
+                        std::slice::from_ref(&self.ch).to_vec(),
+                    ))
                 }
             }
 
             b'"' => Some(Token {
-                Type: token::STRING_CONST,
-                Literal: self.read_string(),
+                Type: String::from(token::STRING_CONST),
+                Literal: self.read_string().to_string(),
             }),
             b'\0' => None,
             _ => {
                 if is_letter(self.ch) {
                     let re = self.read_identifier();
                     Some(Token {
-                        Type: token::lookup_ident(re),
-                        Literal: re,
+                        Type: token::lookup_ident(re).to_string(),
+                        Literal: re.to_string(),
                     })
                 } else if is_digit(self.ch) {
                     Some(Token {
-                        Type: token::INT_CONST,
-                        Literal: self.read_number(),
+                        Type: String::from(token::INT_CONST),
+                        Literal: self.read_number().to_string(),
                     })
                 } else {
-                    Some(Token::new(token::ILLEGAL, std::slice::from_ref(&self.ch)))
+                    Some(Token::new(
+                        String::from(token::ILLEGAL),
+                        std::slice::from_ref(&self.ch).to_vec(),
+                    ))
                 }
             }
         }
@@ -104,26 +170,33 @@ impl Lexer {
 
     fn skip_comments(&mut self) -> Option<Token> {
         // in line comment
-        if self.peek_char() == b'/' {
+        if self.peek_char() == b'/' && self.ch == b'/' {
             while self.ch != b'\n' && self.ch != b'\0' {
                 //println!("there {:?}", self.ch);
                 self.advance();
             }
-            //println!("here {:?}", self.ch);
             return None;
+        } else if self.ch == b'*' {
+            self.advance();
+            while self.ch != b'*' || self.peek_char() != b'/' {
+                if self.ch == b'\0' {
+                    return None;
+                }
+                self.advance();
+            }
         } else {
             self.advance(); // cur = first *
             if self.peek_char() == b'*' {
                 self.advance(); // cur second *
             }
             self.advance(); // overcome *
-            while (self.ch != b'*' || self.peek_char() != b'/') && self.ch == b'\0'{
+            while self.ch != b'*' || self.peek_char() != b'/' {
                 if self.ch == b'\0' {
                     return None;
                 }
                 self.advance();
             }
-            self.advance(); // got to / token
+            self.advance(); // go to / token
         }
         self.next_token()
     }

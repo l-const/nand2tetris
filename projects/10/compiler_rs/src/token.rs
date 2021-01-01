@@ -12,7 +12,7 @@ pub(crate) const ILLEGAL: &'static str = "ILLEGAL";
 pub(crate) const EOF: &'static str = "EOF";
 
 // Identifiers and Literals
-pub(crate) const IDENT: TokenType = "IDENT"; // add, foobar, x, y
+pub(crate) const IDENT: &'static str = "IDENT"; // add, foobar, x, y
 pub(crate) const INT_CONST: &'static str = "INT"; // 1343456
 pub(crate) const STRING_CONST: &'static str = "STRING"; // "DDSDSDS"
 
@@ -66,16 +66,16 @@ pub(crate) const WHILE: TokenType = "WHILE";
 pub(crate) const RETURN: TokenType = "RETURN";
 
 #[derive(Debug)]
-pub(crate) struct Token<'token> {
-    pub(crate) Type: TokenType,
-    pub(crate) Literal: &'token str,
+pub(crate) struct Token {
+    pub(crate) Type: String,
+    pub(crate) Literal: String,
 }
 
-impl<'a> Token<'a> {
-    pub fn new(token_type: TokenType, ch: &'a [u8]) -> Self {
+impl Token {
+    pub fn new(token_type: String, ch: Vec<u8>) -> Self {
         Token {
             Type: token_type,
-            Literal: std::str::from_utf8(ch).unwrap(),
+            Literal: std::str::from_utf8(&ch).unwrap().to_string(),
         }
     }
 
@@ -87,15 +87,15 @@ impl<'a> Token<'a> {
     }
 
     pub fn token_type(&self) -> TokenKind {
-        match self.Type {
-            INT_CONST => TokenKind::Integer(String::from(self.Literal)),
-            STRING_CONST => TokenKind::StringC(String::from(self.Literal)),
-            IDENT => TokenKind::Identifier(String::from(self.Literal)),
+        match self.Type.as_ref() {
+            INT_CONST => TokenKind::Integer(String::from(&self.Literal)),
+            STRING_CONST => TokenKind::StringC(String::from(&self.Literal)),
+            IDENT => TokenKind::Identifier(String::from(&self.Literal)),
             LPAREN | RPAREN | LBRACE | RBRACE | LBRACKET | RBRACKET | DOT | COMMA | SEMICOLON
             | PLUS | MINUS | ASTERISK | SLASH | AND | OR | LT | GT | EQ | NOT => {
-                TokenKind::Symbol(String::from(self.Literal))
+                TokenKind::Symbol(String::from(&self.Literal))
             }
-            _ => TokenKind::Keyword(String::from(self.Literal)),
+            _ => TokenKind::Keyword(String::from(&self.Literal)),
         }
     }
 
@@ -128,8 +128,8 @@ impl<'a> Token<'a> {
     }
 }
 
-pub(crate) fn lookup_ident(ident: &str) -> TokenType {
-    match ident {
+pub(crate) fn lookup_ident(ident: &str) -> String {
+    let result = match ident {
         "class" => CLASS,
         "constructor" => CONSTRUCTOR,
         "function" => FUNCTION,
@@ -152,5 +152,6 @@ pub(crate) fn lookup_ident(ident: &str) -> TokenType {
         "while" => WHILE,
         "return" => RETURN,
         _ => IDENT,
-    }
+    };
+    String::from(result)
 }
