@@ -20,10 +20,10 @@ pub(crate) fn start() -> io::Result<()> {
         // logic
 
         let mut lex = Lexer::new(buffer_in.clone());
-        let mut token = lex.next_token();
+        let mut token = lex.next_token().unwrap();
         while token.Type != token::EOF {
             println!("{:?}", token);
-            token = lex.next_token();
+            token = lex.next_token().unwrap();
         }
         // here
         stdout

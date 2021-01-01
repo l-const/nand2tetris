@@ -15,63 +15,60 @@ impl Lexer {
             input,
             position: 0,
             read_position: 0,
-            ch: b'0',
+            ch: b'\0',
         }
     }
 
-    pub(crate) fn next_token(&mut self) -> Token {
+    pub(crate) fn next_token(&mut self) -> Option<Token> {
         self.advance();
         self.skip_whitespace();
         match self.ch {
-            b'=' => Token::new(token::EQ, std::slice::from_ref(&self.ch)),
-            b'+' => Token::new(token::PLUS, std::slice::from_ref(&self.ch)),
-            b'-' => Token::new(token::MINUS, std::slice::from_ref(&self.ch)),
-            b'*' => Token::new(token::ASTERISK, std::slice::from_ref(&self.ch)),
-            b'<' => Token::new(token::LT, std::slice::from_ref(&self.ch)),
-            b'>' => Token::new(token::GT, std::slice::from_ref(&self.ch)),
-            b'.' => Token::new(token::DOT, std::slice::from_ref(&self.ch)),
-            b';' => Token::new(token::SEMICOLON, std::slice::from_ref(&self.ch)),
-            b',' => Token::new(token::COMMA, std::slice::from_ref(&self.ch)),
-            b'{' => Token::new(token::LBRACE, std::slice::from_ref(&self.ch)),
-            b'}' => Token::new(token::RBRACE, std::slice::from_ref(&self.ch)),
-            b'(' => Token::new(token::LPAREN, std::slice::from_ref(&self.ch)),
-            b')' => Token::new(token::RPAREN, std::slice::from_ref(&self.ch)),
-            b'[' => Token::new(token::LBRACKET, std::slice::from_ref(&self.ch)),
-            b']' => Token::new(token::RBRACKET, std::slice::from_ref(&self.ch)),
-            b'&' => Token::new(token::AND, std::slice::from_ref(&self.ch)),
-            b'|' => Token::new(token::OR, std::slice::from_ref(&self.ch)),
-            b'~' => Token::new(token::NOT, std::slice::from_ref(&self.ch)),
+            b'=' => Some(Token::new(token::EQ, std::slice::from_ref(&self.ch))),
+            b'+' => Some(Token::new(token::PLUS, std::slice::from_ref(&self.ch))),
+            b'-' => Some(Token::new(token::MINUS, std::slice::from_ref(&self.ch))),
+            b'*' => Some(Token::new(token::ASTERISK, std::slice::from_ref(&self.ch))),
+            b'<' => Some(Token::new(token::LT, std::slice::from_ref(&self.ch))),
+            b'>' => Some(Token::new(token::GT, std::slice::from_ref(&self.ch))),
+            b'.' => Some(Token::new(token::DOT, std::slice::from_ref(&self.ch))),
+            b';' => Some(Token::new(token::SEMICOLON, std::slice::from_ref(&self.ch))),
+            b',' => Some(Token::new(token::COMMA, std::slice::from_ref(&self.ch))),
+            b'{' => Some(Token::new(token::LBRACE, std::slice::from_ref(&self.ch))),
+            b'}' => Some(Token::new(token::RBRACE, std::slice::from_ref(&self.ch))),
+            b'(' => Some(Token::new(token::LPAREN, std::slice::from_ref(&self.ch))),
+            b')' => Some(Token::new(token::RPAREN, std::slice::from_ref(&self.ch))),
+            b'[' => Some(Token::new(token::LBRACKET, std::slice::from_ref(&self.ch))),
+            b']' => Some(Token::new(token::RBRACKET, std::slice::from_ref(&self.ch))),
+            b'&' => Some(Token::new(token::AND, std::slice::from_ref(&self.ch))),
+            b'|' => Some(Token::new(token::OR, std::slice::from_ref(&self.ch))),
+            b'~' => Some(Token::new(token::NOT, std::slice::from_ref(&self.ch))),
             b'/' => {
                 let n_char = self.peek_char();
                 if n_char == b'/' || n_char == b'*' {
                     self.skip_comments()
                 } else {
-                    Token::new(token::SLASH, std::slice::from_ref(&self.ch))
+                    Some(Token::new(token::SLASH, std::slice::from_ref(&self.ch)))
                 }
             }
 
-            b'"' => Token {
+            b'"' => Some(Token {
                 Type: token::STRING_CONST,
                 Literal: self.read_string(),
-            },
-            b'0' => Token {
-                Type: token::EOF,
-                Literal: "",
-            },
+            }),
+            b'\0' => None,
             _ => {
                 if is_letter(self.ch) {
                     let re = self.read_identifier();
-                    Token {
+                    Some(Token {
                         Type: token::lookup_ident(re),
                         Literal: re,
-                    }
+                    })
                 } else if is_digit(self.ch) {
-                    Token {
+                    Some(Token {
                         Type: token::INT_CONST,
                         Literal: self.read_number(),
-                    }
+                    })
                 } else {
-                    Token::new(token::ILLEGAL, std::slice::from_ref(&self.ch))
+                    Some(Token::new(token::ILLEGAL, std::slice::from_ref(&self.ch)))
                 }
             }
         }
@@ -83,7 +80,7 @@ impl Lexer {
 
     fn advance(&mut self) {
         if self.read_position >= self.input.len() {
-            self.ch = b'0';
+            self.ch = b'\0';
         } else {
             self.ch = self.input.as_bytes()[self.read_position];
         }
@@ -93,7 +90,7 @@ impl Lexer {
 
     fn peek_char(&self) -> u8 {
         if self.read_position >= self.input.len() {
-            b'0'
+            b'\0'
         } else {
             self.input.as_bytes()[self.read_position]
         }
@@ -105,45 +102,46 @@ impl Lexer {
         }
     }
 
-    fn skip_comments(&mut self) -> Token {
-        // three type of comments
-
+    fn skip_comments(&mut self) -> Option<Token> {
         // in line comment
         if self.peek_char() == b'/' {
-            while self.ch != b'\n' && self.ch != b'0' {
+            while self.ch != b'\n' && self.ch != b'\0' {
+                //println!("there {:?}", self.ch);
                 self.advance();
             }
-        }
-        // block comment and api
-        if self.peek_char() == b'*' {
+            //println!("here {:?}", self.ch);
+            return None;
+        } else {
             self.advance(); // cur = first *
             if self.peek_char() == b'*' {
                 self.advance(); // cur second *
             }
             self.advance(); // overcome *
-            while (self.ch != b'*' || self.peek_char() != b'/') && self.ch != b'0' {
+            while (self.ch != b'*' || self.peek_char() != b'/') && self.ch == b'\0'{
+                if self.ch == b'\0' {
+                    return None;
+                }
                 self.advance();
             }
-            self.advance() // got to / token
+            self.advance(); // got to / token
         }
-
         self.next_token()
     }
 
     fn read_identifier(&mut self) -> &str {
         let position = self.position;
-        while is_letter(self.ch) {
+        while is_letter(self.peek_char()) {
             self.advance()
         }
-        std::str::from_utf8(&self.input.as_bytes()[position..self.position]).unwrap()
+        std::str::from_utf8(&self.input.as_bytes()[position..self.read_position]).unwrap()
     }
 
     fn read_number(&mut self) -> &str {
         let position = self.position;
-        while is_digit(self.ch) {
+        while is_digit(self.peek_char()) {
             self.advance()
         }
-        std::str::from_utf8(&self.input.as_bytes()[position..self.position]).unwrap()
+        std::str::from_utf8(&self.input.as_bytes()[position..self.read_position]).unwrap()
     }
 
     fn read_string(&mut self) -> &str {
@@ -158,30 +156,31 @@ impl Lexer {
 
     pub(crate) fn tokenize(&mut self) {
         while self.has_more_tokens() {
-            let token = self.next_token();
-            if token.Type != token::EOF {
-                println!("{}", Lexer::token_to_xml(token));
+            if let Some(t) = self.next_token() {
+                if t.Type != token::EOF {
+                    println!("{}", Lexer::token_to_xml(&t));
+                }
             }
         }
     }
 
-    pub(crate) fn token_to_xml(token: Token) -> String {
+    pub(crate) fn token_to_xml(token: &Token) -> String {
         match token.token_type() {
-            TokenKind::Keyword(s) => format!("<keyword> {} </keyword>", s),
+            TokenKind::Keyword(s) => format!("<keyword> {} </keyword>\n", s),
             TokenKind::Symbol(s) => {
                 if token.Type == token::GT {
-                    format!("<symbol> {} </symbol>", "&gt;")
+                    format!("<symbol> {} </symbol>\n", "&gt;")
                 } else if token.Type == token::LT {
-                    format!("<symbol> {} </symbol>", "&lt;")
+                    format!("<symbol> {} </symbol>\n", "&lt;")
                 } else if token.Type == token::AND {
-                    format!("<symbol> {} </symbol>", "&amp;")
+                    format!("<symbol> {} </symbol>\n", "&amp;")
                 } else {
-                    format!("<symbol> {} </symbol>", s)
+                    format!("<symbol> {} </symbol>\n", s)
                 }
             }
-            TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>", s),
-            TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>", s),
-            TokenKind::Identifier(s) => format!("<identifier> {} </identifier>", s),
+            TokenKind::Integer(s) => format!("<integerConstant> {} </integerConstant>\n", s),
+            TokenKind::StringC(s) => format!("<stringConstant> {} </stringConstant>\n", s),
+            TokenKind::Identifier(s) => format!("<identifier> {} </identifier>\n", s),
         }
     }
 }
