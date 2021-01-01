@@ -180,7 +180,7 @@ impl Parser {
             }
         }
 
-        self.compile_term(); // rbrace }
+        //self.compile_term(); // rbrace }
         self.write("</statements>\n");
     }
 
@@ -188,7 +188,7 @@ impl Parser {
         self.write("<doStatement>\n");
         // keyword do
         self.compile_term();
-        while self.cur_token_is(token::LPAREN) {
+        while !self.cur_token_is(token::LPAREN) {
             self.compile_term();
         }
         self.compile_expression_list();
