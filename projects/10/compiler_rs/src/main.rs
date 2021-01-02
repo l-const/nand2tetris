@@ -5,6 +5,8 @@ mod repl;
 #[allow(dead_code)]
 mod token;
 
+mod parser;
+
 #[allow(dead_code)]
 mod parser_old;
 

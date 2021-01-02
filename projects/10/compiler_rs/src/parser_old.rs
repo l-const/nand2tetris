@@ -61,22 +61,23 @@ impl Parser {
             self.compile_term();
         }
 
-       
         while self.peek_token_is(token::FIELD) || self.peek_token_is(token::STATIC) {
-                self.compile_class_vardec();
+            self.compile_class_vardec();
         }
-        
-        while self.peek_token_is(token::CONSTRUCTOR) || self.peek_token_is(token::FUNCTION) || self.peek_token_is(token::METHOD) {
-                self.compile_subroutine();
-                //self.next_token();
-        } 
-               
+
+        while self.peek_token_is(token::CONSTRUCTOR)
+            || self.peek_token_is(token::FUNCTION)
+            || self.peek_token_is(token::METHOD)
+        {
+            self.compile_subroutine();
+            //self.next_token();
+        }
+
         // symbol '}'
         if self.peek_token_is(token::RBRACE) {
             self.compile_term();
         } else {
             panic!("Error in compile class {:?}", self.cur_token.Type);
-        
         }
         // </class>
         self.write("</class>\n");
@@ -132,8 +133,6 @@ impl Parser {
         // LBRACE
         self.compile_term();
 
-     
-
         while self.peek_token_is(token::VAR) {
             self.compile_vardec();
         }
@@ -151,9 +150,7 @@ impl Parser {
         //list, not including the enclosing “()”.
         self.write("<parameterList>\n");
 
-        if !self.cur_token_is(token::LPAREN) {
-           
-        }
+        if !self.cur_token_is(token::LPAREN) {}
 
         while !self.peek_token_is(token::RPAREN) {
             self.compile_term();
@@ -188,8 +185,7 @@ impl Parser {
                 self.compile_while();
             } else if self.peek_token_is(token::LET) {
                 self.compile_let();
-
-            } else if self.peek_token_is(token::RETURN){
+            } else if self.peek_token_is(token::RETURN) {
                 self.compile_return();
             } else {
                 panic!("Error in compile statements!{:?}", self.cur_token.Type);
@@ -209,7 +205,7 @@ impl Parser {
         self.compile_expression_list();
         // RPAREN SYMBOL
         //self.compile_term();
-        
+
         // while !self.peek_token_is(token::SEMICOLON) {
         //     self.compile_term();
         // }
@@ -293,15 +289,15 @@ impl Parser {
         self.write("<expression>\n");
         self.write("<term>\n");
         self.compile_term();
-        while self.cur_token_is(token::PLUS)||
-        self.cur_token_is(token::MINUS)||
-        self.cur_token_is(token::ASTERISK)||
-        self.cur_token_is(token::SLASH)||
-        self.cur_token_is(token::AND)||
-        self.cur_token_is(token::OR)||
-        self.cur_token_is(token::GT)||
-        self.cur_token_is(token::LT)||
-        self.cur_token_is(token::EQ)
+        while self.cur_token_is(token::PLUS)
+            || self.cur_token_is(token::MINUS)
+            || self.cur_token_is(token::ASTERISK)
+            || self.cur_token_is(token::SLASH)
+            || self.cur_token_is(token::AND)
+            || self.cur_token_is(token::OR)
+            || self.cur_token_is(token::GT)
+            || self.cur_token_is(token::LT)
+            || self.cur_token_is(token::EQ)
         {
             //self.compile_term(); // symbol operator
             self.write("<term>\n");
@@ -309,14 +305,14 @@ impl Parser {
             self.write("</term>\n");
         }
         self.write("</term>\n");
-        
+
         self.write("</expression>\n");
     }
 
     fn compile_term(&mut self) {
         let prev_tok_type = self.cur_token.Type.clone();
         self.next_token();
-        
+
         match self.cur_token.token_type() {
             TokenKind::Keyword(s) => {
                 let s = format!("<keyword> {} </keyword>\n", &s);
@@ -342,16 +338,16 @@ impl Parser {
         if self.peek_token_is(token::LBRACKET) && self.cur_token_is(token::IDENT) {
             // varName '[' expression ']'
             self.compile_term(); // symbol [
-            self.compile_expression(); 
+            self.compile_expression();
             self.compile_term(); // symbol ]
         } else if self.peek_token_is(token::DOT) && self.cur_token_is(token::IDENT) {
-           self.compile_term();  // dot
-           self.compile_term(); // subroutiname ident
-           self.compile_term(); // lparen
-        } else if  self.cur_token_is(token::NOT) || self.cur_token_is(token::MINUS){
+            self.compile_term(); // dot
+            self.compile_term(); // subroutiname ident
+            self.compile_term(); // lparen
+        } else if self.cur_token_is(token::NOT) || self.cur_token_is(token::MINUS) {
             // unaryOp term
             self.compile_term();
-        } else if  self.cur_token_is(token::LPAREN) {
+        } else if self.cur_token_is(token::LPAREN) {
             // (' expression ')' || ( expression_list )
             if prev_tok_type != token::IDENT {
                 // (' expression ')'
@@ -365,7 +361,7 @@ impl Parser {
             // don't know
         }
     }
-   
+
     fn compile_expression_list(&mut self) {
         // compiles a (possibly empty) comma-
         // separated list of expressions.
@@ -375,7 +371,6 @@ impl Parser {
             if self.peek_token_is(token::COMMA) {
                 self.compile_term();
             }
-           
         }
         self.write("</expressionList>\n");
     }
@@ -422,10 +417,3 @@ impl Parser {
         self.compile_class();
     }
 }
-
-//#[test]
-// fn parser_test() {
-//     let mut pars = Parser::new("Square.jack".to_string());
-//     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
-//     pars.parse();
-// }
