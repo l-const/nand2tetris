@@ -220,8 +220,8 @@ impl Parser {
         self.require(token::IF); //if  keyword'
         self.cond_expression();
         if self.peek_token_is(token::ELSE) {
-            self.require(token::ELSE); // else keyword   
-            self.require(token::LBRACE); // '{' symbol        
+            self.require(token::ELSE); // else keyword
+            self.require(token::LBRACE); // '{' symbol
             self.compile_statements();
             self.require(token::RBRACE); // '}' symbol
         }
@@ -302,12 +302,12 @@ impl Parser {
                 self.write(&s);
             }
             TokenKind::Symbol(s) => {
-                let s   = match s.as_str()  {
+                let s = match s.as_str() {
                     "<" => "&lt;",
-                    ">" =>  "&gt;",
-                    "&" =>   "&amp;",
-                    "\"" =>   "&quot;",
-                    s =>  s,
+                    ">" => "&gt;",
+                    "&" => "&amp;",
+                    "\"" => "&quot;",
+                    s => s,
                 };
                 let s = format!("<symbol> {} </symbol>\n", &s);
                 self.write(&s);
@@ -335,7 +335,6 @@ impl Parser {
         while self.peek_token_is(token::COMMA) {
             self.terminal();
             self.compile_expression();
-            
         }
 
         self.write("</expressionList>\n");
@@ -460,11 +459,9 @@ fn parser_test2() {
     pars.parse();
 }
 
-
 #[test]
 fn parser_test3() {
     let mut pars = Parser::new("MainES.jack".to_string());
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }
-
