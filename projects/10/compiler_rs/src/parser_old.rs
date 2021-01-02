@@ -13,11 +13,7 @@ struct Parser {
     cur_token: Token,
     peek_token: Token,
 }
-fn parser_test() {
-    //     let mut pars = Parser::new("Square.jack".to_string());
-    //     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
-    //     pars.parse();
-    // }
+
 impl Parser {
     pub(crate) fn new(file_path: String) -> Self {
         let out_path = file_path.split(".").next().unwrap().to_string() + ".xml";
@@ -427,9 +423,9 @@ impl Parser {
     }
 }
 
-#[test]
-fn parser_test() {
-    let mut pars = Parser::new("Square.jack".to_string());
-    //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
-    pars.parse();
-}
+//#[test]
+// fn parser_test() {
+//     let mut pars = Parser::new("Square.jack".to_string());
+//     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
+//     pars.parse();
+// }

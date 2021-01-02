@@ -6,7 +6,7 @@ mod repl;
 mod token;
 
 #[allow(dead_code)]
-mod parser;
+mod parser_old;
 
 use std::fs::File;
 use std::io::prelude::*;
