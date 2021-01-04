@@ -16,7 +16,7 @@ struct Assembler {
     code_gen: Code,
     sym_table: SymbolTable,
     out: Vec<String>,
-    symbol_adress: usize,
+    symbol_address: usize,
 }
 
 impl Assembler {
@@ -24,13 +24,14 @@ impl Assembler {
         let file = filename.clone();
         let mut p = Parser::new(file);
         p.init();
+        let size = p.lines.len();
         Assembler {
             filename,
             parser: p,
             code_gen: Code {},
             sym_table: SymbolTable::new(),
-            out: vec![],
-            symbol_adress: 16,
+            out: Vec::with_capacity(size),
+            symbol_address: 16,
         }
     }
 
@@ -57,11 +58,11 @@ impl Assembler {
                 // @sum
                 if !self.sym_table.contains(cur_symbol) {
                     self.sym_table
-                        .add_entry(cur_symbol.to_owned(), self.symbol_adress);
-                    let f_addr = format!("{:#018b}", self.symbol_adress);
+                        .add_entry(cur_symbol.to_owned(), self.symbol_address);
+                    let f_addr = format!("{:#018b}", self.symbol_address);
                     let f_out = f_addr.split('b').nth(1).unwrap().to_owned();
                     self.out.push(f_out);
-                    self.symbol_adress += 1;
+                    self.symbol_address += 1;
                 } else {
                     let addr = self.sym_table.get_address(cur_symbol).unwrap();
                     let f_addr = format!("{:#018b}", addr);

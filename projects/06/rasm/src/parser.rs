@@ -52,7 +52,7 @@ impl Parser {
             .into_iter()
             .filter(|x| !x.starts_with('/') && !x.is_empty())
             .collect();
-        // Remove whitespaces and inline comments from lines
+        // Remove whitespace and inline comments from lines
         let _it: Vec<String> = _it
             .into_iter()
             .map(|x| Parser::my_filter(x))
