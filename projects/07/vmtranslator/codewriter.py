@@ -18,7 +18,7 @@ class CodeWriter:
     def __init__(self, source: str) -> None:
         super().__init__()
         self.source = source
-        self.vm_file = source 
+        self.vm_file = source
         self.is_dir = os.path.isdir(self.source)
         self._output = []
         self.out_file = open(self._get_out_file(), "w+")
@@ -27,6 +27,8 @@ class CodeWriter:
 
     def set_filename(self, name: str):
         self.vm_file = name
+        print(f"vm_file: {self.vm_file}")
+
 
     def _get_sp(self, offset=""):  # @SP
         self.out_file.write(f"\n@SP\nA=M{offset}")
@@ -81,10 +83,12 @@ class CodeWriter:
     def get_static(self, index:int, kind=0):
         # static  segment start at ram[16]
         if not kind:
-            self.out_file.write(f"\n@{16+index}\nD=M")
+            #self.out_file.write(f"\n@{16+index}\nD=M")
+            self.out_file.write(f"\n@{self.vm_file}.{index}\nD=M")
         else:
-            self.out_file.write(f"\n@{16+index}\nD=A")
-   
+            #self.out_file.write(f"\n@{16+index}\nD=A")
+            self.out_file.write(f"\n@{self.vm_file}.{index}\nD=A")
+
     def push(self, reg="D"):  # *SP=D,A , SP++
         self._get_sp()      #A=M
         self.out_file.write(f"\nM={reg}")  # M = D, M = A

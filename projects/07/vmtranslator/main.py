@@ -9,7 +9,7 @@ def main():
         source = sys.argv[1]
         if os.path.isdir(source):
             print("path is dir")
-            vm_files = [(source + "/" + f) for f in os.listdir(source)]
+            vm_files = [(source + "/" + f) for f in os.listdir(source) if f.split(".")[-1] == "vm"]
             parsers = [Parser(f) for f in vm_files]
             # [print(len(p.lines)) for p in parsers]
             run(parsers, 0)
@@ -22,9 +22,10 @@ def main():
 
 
 def run(parsers, mode):
-    if mode == 0:
-        c_writer = CodeWriter(parsers[0].filename)
+    if mode == 0: #folder
+        c_writer = CodeWriter(parsers[0].filename.split("/")[-2]) #folder_name
         for p in parsers:
+            c_writer.set_filename(p.filename.split("/")[-1].split(".")[0]) #each vm_file
             while p.has_more_commands():
                 cmd_type = p.command_type()
                 if cmd_type == 2 or cmd_type == 3:
@@ -35,6 +36,7 @@ def run(parsers, mode):
     else:
         p = parsers
         c_writer = CodeWriter(p.filename)
+        c_writer.set_filename(p.filename.split("/")[-1].split(".")[0])
         while p.has_more_commands():
             cmd_type = p.command_type()
             if cmd_type == 2 or cmd_type == 3:

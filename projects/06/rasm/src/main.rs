@@ -6,9 +6,9 @@ use code_gen::Code;
 use parser::{Cmd, Parser};
 use symbol::SymbolTable;
 
-use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::{env, io::BufWriter};
 
 struct Assembler {
     filename: String,
@@ -52,9 +52,7 @@ impl Assembler {
             let cur_symbol = self.parser.symbol().unwrap_or("None");
 
             if self.parser.command_type() == Cmd::ACommand
-                && cur_symbol
-                    .chars()
-                    .any(|x| !x.is_numeric())
+                && cur_symbol.chars().any(|x| !x.is_numeric())
             {
                 // @sum
                 if !self.sym_table.contains(cur_symbol) {
@@ -71,9 +69,7 @@ impl Assembler {
                     self.out.push(f_out);
                 }
             } else if self.parser.command_type() == Cmd::ACommand
-                && cur_symbol
-                    .chars()
-                    .all(|x| x.is_numeric())
+                && cur_symbol.chars().all(|x| x.is_numeric())
             {
                 // @100
                 let f_sym = format!("{:#018b}", cur_symbol.parse::<usize>().unwrap());
@@ -101,10 +97,13 @@ impl Assembler {
     fn gen(&mut self) {
         let mut name = self.filename.split('.').next().unwrap().to_owned();
         name.push_str(".hack");
-        let mut out = File::create(name).expect("Problem opening output.file");
-        self.out
-            .iter()
-            .for_each(|s| writeln!(out, "{}", s).expect("Problem writing lines!"));
+        let out = File::create(name).expect("Problem opening output.file");
+        let mut buf = BufWriter::new(&out);
+        self.out.iter().for_each(|s| {
+            buf.write(format!("{}\n", s).as_bytes())
+                .expect("Error writing line in buffer!");
+        });
+        buf.flush().expect("error in flush");
     }
 
     fn run(&mut self) {
