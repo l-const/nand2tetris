@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
 
-struct Parser {
+pub(crate) struct Parser {
     reader: BufReader<File>,
     writer: BufWriter<File>,
     lex: Lexer,
@@ -15,7 +15,7 @@ struct Parser {
 }
 
 impl Parser {
-    pub(crate) fn new(file_path: String) -> Self {
+    pub(crate) fn new(file_path: &str) -> Self {
         let out_path = file_path.split(".").next().unwrap().to_string() + ".xml";
         let in_f = File::open(&file_path).expect("Couldn't open file!");
         let out_f = File::create(&out_path).expect("Couldn't create file!");
@@ -448,20 +448,20 @@ impl Parser {
 
 #[test]
 fn parser_test1() {
-    let mut pars = Parser::new("MainArray.jack".to_string());
+    let mut pars = Parser::new("MainArray.jack");
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }
 #[test]
 fn parser_test2() {
-    let mut pars = Parser::new("SquareGame.jack".to_string());
+    let mut pars = Parser::new("SquareGame.jack");
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }
 
 #[test]
 fn parser_test3() {
-    let mut pars = Parser::new("MainES.jack".to_string());
+    let mut pars = Parser::new("MainES.jack");
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }

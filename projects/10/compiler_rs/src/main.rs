@@ -1,73 +1,51 @@
 #[allow(dead_code)]
 mod lexer;
 #[allow(dead_code)]
+mod parser;
+#[allow(dead_code)]
 mod repl;
 #[allow(dead_code)]
 mod token;
 
-mod parser;
+use std::fs;
+use std::io;
+//use token::Token;
 
-#[allow(dead_code)]
-mod parser_old;
-
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::{BufReader, BufWriter};
-
-use token::Token;
-
-fn main() {
-    file_io_lexer(String::from("tokenizer_tests/Array.jack")).unwrap();
-    file_io_lexer(String::from("tokenizer_tests/Square.jack")).unwrap();
-    file_io_lexer(String::from("tokenizer_tests/SquareGame.jack")).unwrap();
+struct Analyzer<'fpath> {
+    filepath: &'fpath str,
 }
 
-fn file_io_lexer(input_path: String) -> std::io::Result<()> {
-    let out_path = input_path.split(".").next().unwrap().to_string() + ".xml";
-    let in_f = File::open(&input_path).expect("Couldn't open file!");
-    let out_f = File::create(&out_path).expect("Couldn't create file!");
-    let mut reader = BufReader::new(in_f);
-    let mut writer = BufWriter::new(out_f);
-
-    let mut line = String::new();
-    let mut token: token::Token = Token {
-        Type: String::from("("),
-        Literal: String::from("("),
-    };
-    let mut tkn_xml: String;
-    writer
-        .write("<tokens>\n".as_bytes())
-        .expect("Couldn't write <tokens>!");
-    let mut num_b = reader.read_line(&mut line).expect("Error reading line!");
-    let mut lex = lexer::Lexer::new(line.clone());
-    line.clear(); // clear input buffer
-    if let Some(t) = lex.next_token() {
-        token = t;
-        tkn_xml = lexer::Lexer::token_to_xml(&token);
-        writer
-            .write(&tkn_xml.as_bytes())
-            .expect("Couldn't write token!");
-        //writer.flush()?;
+impl<'a> Analyzer<'a> {
+    pub fn new(s: &'a String) -> Self {
+        Analyzer { filepath: s }
     }
-    loop {
-        if num_b == 0 {
-            writer.flush()?;
-            writer
-                .write("</tokens>\n".as_bytes())
-                .expect("Couldn't write </tokens>!");
-            return Ok(());
+    pub fn run(&self) -> io::Result<()> {
+        if fs::metadata(&self.filepath)
+            .expect("Couldn't get file meatadata")
+            .file_type()
+            .is_dir()
+        {
+            for entry in fs::read_dir(&self.filepath)? {
+                let entry = entry?;
+                let path = entry.path();
+                let path_str = path.to_str().unwrap();
+                if path_str.split(".").nth(1).unwrap() == ".jack" {
+                    let mut parser = parser::Parser::new(path_str);
+                    parser.parse();
+                }
+            }
+        } else {
+            let mut parser = parser::Parser::new(self.filepath);
+            parser.parse();
         }
-        while let Some(t) = lex.next_token() {
-            //println!("t = {:?}", &t);
-            token = t;
-            tkn_xml = lexer::Lexer::token_to_xml(&token);
-            writer
-                .write(&tkn_xml.as_bytes())
-                .expect("Couldn't write token!");
-            //writer.flush()?;
-        }
-        num_b = reader.read_line(&mut line).expect("Error reading line!");
-        lex = lexer::Lexer::new(line.clone());
-        line.clear();
+        Ok(())
+    }
+}
+fn main() {
+    if let Some(fpath) = std::env::args().nth(1) {
+        let analyzer = Analyzer::new(&fpath);
+        analyzer.run().expect("Error in analyzer!");
+    } else {
+        println!("Usage: cargo run <path>");
     }
 }
