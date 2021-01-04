@@ -6,9 +6,9 @@ use code_gen::Code;
 use parser::{Cmd, Parser};
 use symbol::SymbolTable;
 
-use std::env;
 use std::fs::File;
 use std::io::Write;
+use std::{env, io::BufWriter};
 
 struct Assembler {
     filename: String,
@@ -16,7 +16,7 @@ struct Assembler {
     code_gen: Code,
     sym_table: SymbolTable,
     out: Vec<String>,
-    symbol_adress: usize,
+    symbol_address: usize,
 }
 
 impl Assembler {
@@ -24,13 +24,14 @@ impl Assembler {
         let file = filename.clone();
         let mut p = Parser::new(file);
         p.init();
+        let size = p.lines.len();
         Assembler {
             filename,
             parser: p,
             code_gen: Code {},
             sym_table: SymbolTable::new(),
-            out: vec![],
-            symbol_adress: 16,
+            out: Vec::with_capacity(size),
+            symbol_address: 16,
         }
     }
 
@@ -52,18 +53,16 @@ impl Assembler {
             let cur_symbol = self.parser.symbol().unwrap_or("None");
 
             if self.parser.command_type() == Cmd::ACommand
-                && cur_symbol
-                    .chars()
-                    .any(|x| !x.is_numeric())
+                && cur_symbol.chars().any(|x| !x.is_numeric())
             {
                 // @sum
                 if !self.sym_table.contains(cur_symbol) {
                     self.sym_table
-                        .add_entry(cur_symbol.to_owned(), self.symbol_adress);
-                    let f_addr = format!("{:#018b}", self.symbol_adress);
+                        .add_entry(cur_symbol.to_owned(), self.symbol_address);
+                    let f_addr = format!("{:#018b}", self.symbol_address);
                     let f_out = f_addr.split('b').nth(1).unwrap().to_owned();
                     self.out.push(f_out);
-                    self.symbol_adress += 1;
+                    self.symbol_address += 1;
                 } else {
                     let addr = self.sym_table.get_address(cur_symbol).unwrap();
                     let f_addr = format!("{:#018b}", addr);
@@ -71,9 +70,7 @@ impl Assembler {
                     self.out.push(f_out);
                 }
             } else if self.parser.command_type() == Cmd::ACommand
-                && cur_symbol
-                    .chars()
-                    .all(|x| x.is_numeric())
+                && cur_symbol.chars().all(|x| x.is_numeric())
             {
                 // @100
                 let f_sym = format!("{:#018b}", cur_symbol.parse::<usize>().unwrap());
@@ -101,10 +98,13 @@ impl Assembler {
     fn gen(&mut self) {
         let mut name = self.filename.split('.').next().unwrap().to_owned();
         name.push_str(".hack");
-        let mut out = File::create(name).expect("Problem opening output.file");
-        self.out
-            .iter()
-            .for_each(|s| writeln!(out, "{}", s).expect("Problem writing lines!"));
+        let out = File::create(name).expect("Problem opening output.file");
+        let mut buf = BufWriter::new(&out);
+        self.out.iter().for_each(|s| {
+            buf.write(format!("{}\n", s).as_bytes())
+                .expect("Error writing line in buffer!");
+        });
+        buf.flush().expect("error in flush");
     }
 
     fn run(&mut self) {
