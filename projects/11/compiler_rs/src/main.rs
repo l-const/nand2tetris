@@ -35,9 +35,9 @@ impl<'a> Analyzer<'a> {
                 let path = entry.path();
                 let path_str = path.to_str().unwrap().to_string();
                 if path_str.split(".").last().unwrap() == "jack" {
-                    handles.push(thread::spawn( move || {
-                    let mut parser = parser::Parser::new(path_str);
-                    parser.parse();
+                    handles.push(thread::spawn(move || {
+                        let mut parser = parser::Parser::new(path_str);
+                        parser.parse();
                     }));
                 }
             }
