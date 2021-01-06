@@ -15,7 +15,8 @@ pub(crate) struct Parser {
 }
 
 impl Parser {
-    pub(crate) fn new(file_path: &str) -> Self {
+    pub(crate) fn new(file_path: String) -> Self {
+        let file_path = &file_path;
         let out_path = file_path.split("/").last().unwrap().to_string() + ".xml";
         let in_f = File::open(&file_path).expect("Couldn't open file!");
         let out_f = File::create(&out_path).expect("Couldn't create file!");
@@ -455,20 +456,20 @@ impl Parser {
 
 #[test]
 fn parser_test1() {
-    let mut pars = Parser::new("MainArray.jack");
+    let mut pars = Parser::new("MainArray.jack".to_string());
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }
 #[test]
 fn parser_test2() {
-    let mut pars = Parser::new("SquareGame.jack");
+    let mut pars = Parser::new("SquareGame.jack".to_string());
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }
 
 #[test]
 fn parser_test3() {
-    let mut pars = Parser::new("MainES.jack");
+    let mut pars = Parser::new("MainES.jack".to_string());
     //println!("{:?} , {:?}", pars.cur_token, pars.peek_token);
     pars.parse();
 }

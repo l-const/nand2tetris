@@ -1,24 +1,34 @@
-pub(crate) struct SymbolTable {}
+use std::collections::HashMap;
+
+pub(crate) struct SymbolTable {
+    class_table: HashMap<String, String>,
+    method_table: HashMap<String, String>,
+}
 
 pub(crate) enum IdKind {
     STATIC,
     FIELD,
     ARG,
+    VAR,
     NONE,
 }
 
 impl SymbolTable {
     pub(crate) fn new() -> Self {
-        SymbolTable {}
+        SymbolTable {
+            class_table: HashMap::<String, String>::new(),
+            method_table: HashMap::<String, String>::new(),
+        }
     }
 
     fn start_subroutine(&mut self) {
         // Starts a new subroutine scope (i.e. erases
         // all names in the previous subroutine’s
         // scope.)
+        self.method_table.clear();
     }
 
-    fn define(&mut self) {
+    fn define(&mut self, name: &str, typ: &str) {
         //   Defines a new identifier of a given name,
         //  type, and kind and assigns it a running
         //  index. STATIC and FIELD identifiers
@@ -26,7 +36,7 @@ impl SymbolTable {
         //  identifiers have a subroutine scope.
     }
 
-    fn var_count(&self) -> u8 {
+    fn var_count(&self, kind: IdKind) -> u8 {
         // Returns the number of variables of the
         //given kind already defined in the current
         //scope.
@@ -41,13 +51,13 @@ impl SymbolTable {
         IdKind::NONE
     }
 
-    fn type_of(&self) -> &str {
+    fn type_of(&self, name: &str) -> &str {
         // Returns the type of the named identifier in
         //the current scope.
         "fdfdfd"
     }
 
-    fn index_of(&self) -> u8 {
+    fn index_of(&self, name: &str) -> u8 {
         // Returns the index assigned to named
         //identifier.
         1

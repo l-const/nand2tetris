@@ -13,7 +13,7 @@ mod vm_writer;
 
 use std::fs;
 use std::io;
-//use token::Token;
+use std::thread;
 
 struct Analyzer<'fpath> {
     filepath: &'fpath str,
@@ -25,21 +25,27 @@ impl<'a> Analyzer<'a> {
     }
     pub fn run(&self) -> io::Result<()> {
         if fs::metadata(&self.filepath)
-            .expect("Couldn't get file meatadata")
+            .expect("Couldn't get file metadata")
             .file_type()
             .is_dir()
         {
+            let mut handles = vec![];
             for entry in fs::read_dir(&self.filepath)? {
                 let entry = entry?;
                 let path = entry.path();
-                let path_str = path.to_str().unwrap();
+                let path_str = path.to_str().unwrap().to_string();
                 if path_str.split(".").last().unwrap() == "jack" {
+                    handles.push(thread::spawn( move || {
                     let mut parser = parser::Parser::new(path_str);
                     parser.parse();
+                    }));
                 }
             }
+            for handle in handles {
+                handle.join().unwrap();
+            }
         } else {
-            let mut parser = parser::Parser::new(self.filepath);
+            let mut parser = parser::Parser::new(self.filepath.to_string());
             parser.parse();
         }
         Ok(())
