@@ -24,11 +24,11 @@ pub(crate) enum IdKind {
 impl Clone for IdKind {
     fn clone(&self) -> Self {
         match *self {
-            STATIC => STATIC,
-            FIELD => FIELD,
-            ARG => ARG,
-            VAR => VAR,
-            NONE => NONE,
+            IdKind::STATIC => IdKind::STATIC,
+            IdKind::FIELD => IdKind::FIELD,
+            IdKind::ARG => IdKind::ARG,
+            IdKind::VAR => IdKind::VAR,
+            IdKind::NONE => IdKind::NONE,
         }
     }
 }
@@ -59,12 +59,43 @@ impl SymbolTable {
         self.counters.var_count = 0;
     }
 
-    fn define(&mut self, name: &str, typ: &str) {
+    fn define(&mut self, name: &str, typ: &str, kind: IdKind) {
         //   Defines a new identifier of a given name,
         //  type, and kind and assigns it a running
         //  index. STATIC and FIELD identifiers
         //  have a class scope, while ARG and VAR
         //  identifiers have a subroutine scope.
+        match kind {
+            IdKind::NONE => {}
+            IdKind::STATIC => {
+                self.class_table.insert(
+                    name.to_string(),
+                    (typ.to_string(), kind, self.counters.stat_count),
+                );
+                self.counters.stat_count += 1;
+            }
+            IdKind::ARG => {
+                self.method_table.insert(
+                    name.to_string(),
+                    (typ.to_string(), kind, self.counters.arg_count),
+                );
+                self.counters.arg_count += 1;
+            }
+            IdKind::VAR => {
+                self.method_table.insert(
+                    name.to_string(),
+                    (typ.to_string(), kind, self.counters.var_count),
+                );
+                self.counters.var_count += 1;
+            }
+            IdKind::FIELD => {
+                self.class_table.insert(
+                    name.to_string(),
+                    (typ.to_string(), kind, self.counters.field_count),
+                );
+                self.counters.field_count += 1;
+            }
+        }
     }
 
     fn var_count(&self, kind: IdKind) -> u8 {
