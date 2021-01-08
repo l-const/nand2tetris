@@ -1,6 +1,7 @@
 use crate::lexer::Lexer;
+use crate::symbol::{self, IdKind, SymbolTable};
 use crate::token::{self, Token, TokenKind};
-
+use crate::vm_writer::{self, Command, Segment, VmWriter};
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
@@ -12,6 +13,9 @@ pub(crate) struct Parser {
     cur_line: String,
     cur_token: Token,
     peek_token: Token,
+    class_name: String,
+    vm_writer: VmWriter,
+    s_table: SymbolTable,
 }
 
 impl Parser {
@@ -23,6 +27,8 @@ impl Parser {
         let reader = BufReader::new(in_f);
         let writer = BufWriter::new(out_f);
         let lex = Lexer::new(String::from(""));
+        let s_table = SymbolTable::new();
+        let vm_writer = VmWriter::new(&file_path);
         let mut p = Parser {
             reader,
             writer,
@@ -36,6 +42,9 @@ impl Parser {
                 Type: String::from("("),
                 Literal: String::from("("),
             },
+            class_name: String::from(""),
+            s_table,
+            vm_writer,
         };
         p.init();
         p
@@ -51,6 +60,7 @@ impl Parser {
                                  // keyword class
         self.require(token::CLASS);
         // identifier className
+        self.class_name = self.peek_token.Literal.clone();
         self.require(token::IDENT);
         // symbol '{'
         self.require(token::LBRACE);
@@ -73,15 +83,24 @@ impl Parser {
         // <classVarDec>
         self.write("<classVarDec>\n");
         //keyword (static| field)
+        let kind: symbol::IdKind;
+        if self.peek_token.Type == token::STATIC {
+            kind = IdKind::STATIC;
+        } else {
+            kind = IdKind::FIELD;
+        }
         self.terminal();
         //keyword type or identifier className
         //self.require(token::IDENT);
+        let type_k = &self.peek_token.Literal;
         self.terminal();
-
+        let mut name_k = &self.peek_token.Literal;
         self.terminal();
-
+        // call self.s_table.define(name_k, type_k, kind)
         while self.peek_token_is(token::COMMA) {
             self.require(token::COMMA);
+            name_k = &self.peek_token.Literal;
+            // call self.s_table.define(name_k, type_k, kind) every time
             self.require(token::IDENT);
         }
         self.require(token::SEMICOLON);
@@ -94,8 +113,11 @@ impl Parser {
         // or constructor.
         //<subroutineDec>
         self.write("<subroutineDec>\n");
-
+        self.s_table.start_subroutine();
         //keyword (constructor| function| method)
+        if self.peek_token.Type == token::METHOD {
+            self.s_table.define("this", &self.class_name, IdKind::ARG);
+        }
         self.terminal();
         // keyword or identifier (void| type)
         self.terminal();
@@ -138,6 +160,9 @@ impl Parser {
     fn compile_parameter(&mut self) {
         if self.is_type() {
             self.terminal();
+            let type_k = &self.cur_token.Literal; // Type -> Point
+            let name_k = &self.peek_token.Literal; //ident -> other
+            self.s_table.define(name_k, type_k, IdKind::ARG);
             self.require(token::IDENT);
         }
     }
@@ -145,8 +170,14 @@ impl Parser {
     fn compile_vardec(&mut self) {
         self.write("<varDec>\n");
         self.require(token::VAR);
+        // var int dx, dy, dz;
+        let type_k = self.peek_token.Literal.clone();
         while !self.cur_token_is(token::SEMICOLON) {
             self.terminal();
+            if self.cur_token.Type != token::COMMA {
+                let name_k = &self.cur_token.Literal; //ident -> other
+                self.s_table.define(name_k, &type_k, IdKind::LOCAL);
+            }
         }
         self.is(token::SEMICOLON);
         self.write("</varDec>\n");

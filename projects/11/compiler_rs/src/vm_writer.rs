@@ -187,6 +187,6 @@ impl VmWriter {
     }
 
     fn close(&mut self) {
-        self.writer.flush().expect("Could't flush");
+        self.writer.flush().expect("Couldn't flush");
     }
 }

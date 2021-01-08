@@ -10,14 +10,14 @@ struct Counters {
     stat_count: u8,
     field_count: u8,
     arg_count: u8,
-    var_count: u8,
+    local_count: u8,
 }
 #[derive(PartialEq)]
 pub(crate) enum IdKind {
     STATIC,
     FIELD,
     ARG,
-    VAR,
+    LOCAL,
     NONE,
 }
 
@@ -27,7 +27,7 @@ impl Clone for IdKind {
             IdKind::STATIC => IdKind::STATIC,
             IdKind::FIELD => IdKind::FIELD,
             IdKind::ARG => IdKind::ARG,
-            IdKind::VAR => IdKind::VAR,
+            IdKind::LOCAL => IdKind::LOCAL,
             IdKind::NONE => IdKind::NONE,
         }
     }
@@ -40,26 +40,26 @@ impl SymbolTable {
         let counters = Counters {
             stat_count: 0,
             field_count: 0,
-            var_count: 0,
+            local_count: 0,
             arg_count: 0,
         };
         SymbolTable {
             class_table: HashMap::<String, (String, IdKind, u8)>::new(),
             method_table: HashMap::<String, (String, IdKind, u8)>::new(),
-            counters: counters,
+            counters,
         }
     }
 
-    fn start_subroutine(&mut self) {
+    pub(crate) fn start_subroutine(&mut self) {
         // Starts a new subroutine scope (i.e. erases
         // all names in the previous subroutine’s
         // scope.)
         self.method_table.clear();
         self.counters.arg_count = 0;
-        self.counters.var_count = 0;
+        self.counters.local_count = 0;
     }
 
-    fn define(&mut self, name: &str, typ: &str, kind: IdKind) {
+    pub(crate) fn define(&mut self, name: &str, typ: &str, kind: IdKind) {
         //   Defines a new identifier of a given name,
         //  type, and kind and assigns it a running
         //  index. STATIC and FIELD identifiers
@@ -81,12 +81,12 @@ impl SymbolTable {
                 );
                 self.counters.arg_count += 1;
             }
-            IdKind::VAR => {
+            IdKind::LOCAL => {
                 self.method_table.insert(
                     name.to_string(),
-                    (typ.to_string(), kind, self.counters.var_count),
+                    (typ.to_string(), kind, self.counters.local_count),
                 );
-                self.counters.var_count += 1;
+                self.counters.local_count += 1;
             }
             IdKind::FIELD => {
                 self.class_table.insert(
@@ -106,7 +106,7 @@ impl SymbolTable {
             IdKind::STATIC | IdKind::FIELD => {
                 self.class_table.values().filter(|x| x.1 == kind).count() as u8
             }
-            IdKind::ARG | IdKind::VAR => {
+            IdKind::ARG | IdKind::LOCAL => {
                 self.method_table.values().filter(|x| x.1 == kind).count() as u8
             }
             IdKind::NONE => 0,

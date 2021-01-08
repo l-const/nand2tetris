@@ -1,5 +1,5 @@
 [package]
-name = "monkey_rs"
+name = "compiler_rs"
 version = "0.1.0"
 authors = ["l-const <const_l@outlook.com>"]
 edition = "2018"
