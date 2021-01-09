@@ -16,6 +16,7 @@ pub(crate) struct Parser {
     class_name: String,
     vm_writer: VmWriter,
     s_table: SymbolTable,
+    label_num: u8,
 }
 
 impl Parser {
@@ -45,6 +46,7 @@ impl Parser {
             class_name: String::from(""),
             s_table,
             vm_writer,
+            label_num: 0,
         };
         p.init();
         p
@@ -52,7 +54,6 @@ impl Parser {
 
     pub(crate) fn init(&mut self) {
         self.read_new_line();
-        //self.next_token();
     }
 
     fn compile_class(&mut self) {
@@ -91,7 +92,6 @@ impl Parser {
         }
         self.terminal();
         //keyword type or identifier className
-        //self.require(token::IDENT);
         let type_k = &self.peek_token.Literal;
         self.terminal();
         let mut name_k = &self.peek_token.Literal;
@@ -145,6 +145,12 @@ impl Parser {
         self.write("</subroutineDec>\n");
         //</subroutineDec>
     }
+
+    fn  write_fun_def(&mut self) {
+        
+    }
+
+
     fn compile_parameter_list(&mut self) {
         // compiles a (possibly empty) parameter
         //list, not including the enclosing “()”.
@@ -238,7 +244,9 @@ impl Parser {
         // including the enclosing “{}”.
         self.write("<whileStatement>\n");
         self.require(token::WHILE); //while keyword'
-        self.cond_expression();
+        let l2_label = self.cond_expression();
+        // label l2
+        self.vm_writer.write_label(&l2_label);
         self.write("</whileStatement>\n");
     }
 
@@ -249,6 +257,7 @@ impl Parser {
             self.compile_expression();
         }
         self.require(token::SEMICOLON); //-> semicolon
+        self.vm_writer.write_return();
         self.write("</returnStatement>\n");
     }
 
@@ -257,23 +266,69 @@ impl Parser {
         //with a trailing else clause.
         self.write("<ifStatement>\n");
         self.require(token::IF); //if  keyword'
-        self.cond_expression();
+        let l2_label = self.cond_expression();
         if self.peek_token_is(token::ELSE) {
             self.require(token::ELSE); // else keyword
             self.require(token::LBRACE); // '{' symbol
             self.compile_statements();
             self.require(token::RBRACE); // '}' symbol
         }
+        // label l2
+        self.vm_writer.write_label(&l2_label);
         self.write("</ifStatement>\n");
     }
 
-    fn cond_expression(&mut self) {
-        self.require(token::LPAREN); // '(' symbol
-        self.compile_expression();
-        self.require(token::RPAREN); // ')' keyword'
-        self.require(token::LBRACE); // '{' symbol
-        self.compile_statements();
-        self.require(token::RBRACE); // '}' symbol
+    fn cond_expression(&mut self) -> String {
+        if self.peek_token_is(token::IF) {
+            self.require(token::LPAREN); // '(' symbol
+            self.compile_expression();
+            // label l1
+            self.label_num += 1;
+            let l1 = self.label_num;
+            let l1_label = format!("IF{}", l1);
+            // label l2
+            self.label_num += 1;
+            let l2 = self.label_num;
+            let l2_label = format!("IF{}", l2);
+            //not
+            self.vm_writer.write_arithm(Command::NOT);
+            // if-goto L1
+            self.vm_writer.write_if(&l1_label);
+            self.require(token::RPAREN); // ')' keyword'
+            self.require(token::LBRACE); // '{' symbol
+            self.compile_statements();
+            // goto L2
+            self.vm_writer.write_goto(&l2_label);
+            // label L1
+            self.vm_writer.write_label(&l1_label);
+            self.require(token::RBRACE); // '}' symbol
+            l2_label
+        } else {
+            // while
+            // label l1
+            self.label_num += 1;
+            let l1 = self.label_num;
+            let l1_label = format!("WHILE{}", l1);
+            // label l2
+            self.label_num += 1;
+            let l2 = self.label_num;
+            let l2_label = format!("WHILE{}", l2);
+            // write label l1
+            self.vm_writer.write_label(&l1_label);
+            self.require(token::LPAREN); // '(' symbol
+            self.compile_expression();
+            //not
+            self.vm_writer.write_arithm(Command::NOT);
+            // if-goto l2
+            self.vm_writer.write_if(&l2_label);
+            self.require(token::RPAREN); // ')' keyword'
+            self.require(token::LBRACE); // '{' symbol
+            self.compile_statements();
+            // goto L1
+            self.vm_writer.write_goto(&l1_label);
+            self.require(token::RBRACE); // '}' symbol
+            l2_label
+        }
     }
 
     fn compile_expression(&mut self) {
@@ -337,6 +392,13 @@ impl Parser {
         self.next_token();
         match self.cur_token.token_type() {
             TokenKind::Keyword(s) => {
+                if self.cur_token_is(token::THIS)
+                    || self.peek_token_is(token::TRUE)
+                    || self.peek_token_is(token::FALSE)
+                    || self.peek_token_is(token::NULL)
+                {
+                    self.compile_keyword_const();
+                }
                 let s = format!("<keyword> {} </keyword>\n", &s);
                 self.write(&s);
             }
@@ -352,6 +414,8 @@ impl Parser {
                 self.write(&s);
             }
             TokenKind::Integer(s) => {
+                self.vm_writer
+                    .write_push(Segment::CONST, s.parse::<u8>().unwrap());
                 let s = format!("<integerConstant> {} </integerConstant>\n", &s);
                 self.write(&s);
             }
@@ -440,6 +504,18 @@ impl Parser {
             || self.peek_token_is(token::TRUE)
             || self.peek_token_is(token::FALSE)
             || self.peek_token_is(token::NULL)
+    }
+
+    fn compile_keyword_const(&mut self) {
+        if self.peek_token_is(token::TRUE) {
+            self.vm_writer.write_push(Segment::CONST, 1);
+            self.vm_writer.write_arithm(Command::NEG);
+        } else if self.peek_token_is(token::THIS) {
+            self.vm_writer.write_push(Segment::POINTER, 0);
+        } else {
+            // false and null
+            self.vm_writer.write_push(Segment::CONST, 0);
+        }
     }
 
     fn is_type(&mut self) -> bool {
