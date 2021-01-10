@@ -196,7 +196,7 @@ impl VmWriter {
             .expect("Couldn't write return");
     }
 
-    fn close(&mut self) {
+    pub(crate) fn close(&mut self) {
         self.writer.flush().expect("Couldn't flush");
     }
 }

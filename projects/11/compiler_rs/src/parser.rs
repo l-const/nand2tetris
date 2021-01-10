@@ -699,6 +699,7 @@ impl Parser {
 
     pub(crate) fn parse(&mut self) {
         self.compile_class();
+        self.vm_writer.close();
     }
 }
 
