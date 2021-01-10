@@ -2,9 +2,9 @@ use crate::lexer::Lexer;
 use crate::symbol::{self, IdKind, SymbolTable};
 use crate::token::{self, Token, TokenKind};
 use crate::vm_writer::{self, Command, Segment, VmWriter};
-use std::fs::File;
 use std::io::prelude::*;
 use std::io::{BufReader, BufWriter};
+use std::{any, fs::File};
 
 pub(crate) struct Parser {
     reader: BufReader<File>,
@@ -14,6 +14,7 @@ pub(crate) struct Parser {
     cur_token: Token,
     peek_token: Token,
     class_name: String,
+    subroutine_name: String,
     vm_writer: VmWriter,
     s_table: SymbolTable,
     label_num: u8,
@@ -44,6 +45,7 @@ impl Parser {
                 Literal: String::from("("),
             },
             class_name: String::from(""),
+            subroutine_name: String::from(""),
             s_table,
             vm_writer,
             label_num: 0,
@@ -54,6 +56,34 @@ impl Parser {
 
     pub(crate) fn init(&mut self) {
         self.read_new_line();
+    }
+
+    fn vm_function_name(&self) -> String {
+        format!("{}.{}", self.class_name, self.subroutine_name)
+    }
+
+    fn vm_push_variable(&mut self, name: &str) {
+        if let Some((typ, kind, index)) = self.s_table.lookup(name) {
+            match kind {
+                IdKind::ARG => self.vm_writer.write_push(Segment::ARG, *index),
+                IdKind::FIELD => self.vm_writer.write_push(Segment::THIS, *index),
+                IdKind::STATIC => self.vm_writer.write_push(Segment::STATIC, *index),
+                IdKind::LOCAL => self.vm_writer.write_push(Segment::LOCAL, *index),
+                _ => {}
+            }
+        }
+    }
+
+    fn vm_pop_variable(&mut self, name: &str) {
+        if let Some((typ, kind, index)) = self.s_table.lookup(name) {
+            match kind {
+                IdKind::ARG => self.vm_writer.write_pop(Segment::ARG, *index),
+                IdKind::FIELD => self.vm_writer.write_pop(Segment::THIS, *index),
+                IdKind::STATIC => self.vm_writer.write_pop(Segment::STATIC, *index),
+                IdKind::LOCAL => self.vm_writer.write_pop(Segment::LOCAL, *index),
+                _ => {}
+            }
+        }
     }
 
     fn compile_class(&mut self) {
@@ -92,15 +122,15 @@ impl Parser {
         }
         self.terminal();
         //keyword type or identifier className
-        let type_k = &self.peek_token.Literal;
+        let type_k = self.peek_token.Literal.clone();
         self.terminal();
-        let mut name_k = &self.peek_token.Literal;
+        let mut name_k = self.peek_token.Literal.clone();
         self.terminal();
-        // call self.s_table.define(name_k, type_k, kind)
+        self.s_table.define(&name_k, &type_k, kind);
         while self.peek_token_is(token::COMMA) {
             self.require(token::COMMA);
-            name_k = &self.peek_token.Literal;
-            // call self.s_table.define(name_k, type_k, kind) every time
+            name_k = self.peek_token.Literal.clone();
+            self.s_table.define(&name_k, &type_k, kind);
             self.require(token::IDENT);
         }
         self.require(token::SEMICOLON);
@@ -115,6 +145,7 @@ impl Parser {
         self.write("<subroutineDec>\n");
         self.s_table.start_subroutine();
         //keyword (constructor| function| method)
+        let kwd = self.peek_token.Type.clone();
         if self.peek_token.Type == token::METHOD {
             self.s_table.define("this", &self.class_name, IdKind::ARG);
         }
@@ -122,6 +153,7 @@ impl Parser {
         // keyword or identifier (void| type)
         self.terminal();
         // identifier subroutinename
+        self.subroutine_name = self.peek_token.Literal.clone();
         self.require(token::IDENT);
         // LPAREN
         self.require(token::LPAREN);
@@ -136,7 +168,7 @@ impl Parser {
         while self.peek_token_is(token::VAR) {
             self.compile_vardec();
         }
-
+        self.write_func_del(&kwd);
         self.compile_statements();
 
         // RBRACE
@@ -146,10 +178,29 @@ impl Parser {
         //</subroutineDec>
     }
 
-    fn  write_fun_def(&mut self) {
-        
+    fn write_func_del(&mut self, kwd: &str) {
+        // todo
+        self.vm_writer.write_function(
+            &self.vm_function_name(),
+            self.s_table.var_count(IdKind::LOCAL),
+        );
+
+        self.load_this_ptr(kwd);
     }
 
+    fn load_this_ptr(&mut self, kwd: &str) {
+        if kwd == token::METHOD {
+            self.vm_writer.write_push(Segment::ARG, 0); //
+            self.vm_writer.write_pop(Segment::POINTER, 0); // THIS = argument 0
+        } else if kwd == token::CONSTRUCTOR {
+            self.vm_writer
+                .write_push(Segment::CONST, self.s_table.var_count(IdKind::FIELD)); // object_size
+            self.vm_writer.write_call("Memory.alloc", 1); // call Memory.alloc 1
+            self.vm_writer.write_pop(Segment::POINTER, 0); // pop pointer 0
+        } else {
+            println!("In load_this_ptr in else");
+        }
+    }
 
     fn compile_parameter_list(&mut self) {
         // compiles a (possibly empty) parameter
@@ -215,8 +266,13 @@ impl Parser {
         // do' subroutineCall ';'
         self.write("<doStatement>\n");
         self.require(token::DO);
+        // todo get name
+        let name = self.peek_token.Literal.clone();
         self.require(token::IDENT);
-        self.compile_subroutine_call();
+        self.compile_subroutine_call(&name);
+        // the caller of a void method
+        // must dump the returned value
+        self.vm_writer.write_pop(Segment::TEMP, 0);
         self.require(token::SEMICOLON);
         self.write("</doStatement>\n");
     }
@@ -225,18 +281,37 @@ impl Parser {
         // 'let' varName ('[' expression ']')? '=' expression ';'
         self.write("<letStatement>\n");
         self.require(token::LET); //let keyword'
+        let name = self.peek_token.Literal.clone();
         self.require(token::IDENT); //varName identifier'
-        if self.peek_token_is(token::LBRACKET) {
-            // lbracket
-            self.require(token::LBRACKET);
-            self.compile_expression();
-            // rbracket
-            self.require(token::RBRACKET);
+        let is_subscript = self.peek_token_is(token::LBRACKET);
+        if is_subscript {
+            self.compile_base_plus_index(&name); // calculate base+index
         }
         self.require(token::EQ);
-        self.compile_expression();
+        self.compile_expression(); //calculate expression to asssign
         self.require(token::SEMICOLON);
+        if is_subscript {
+            self.pop_array_element(); //  &(base+index) = expr
+        } else {
+            self.vm_pop_variable(&name); // pop value direclty into variable
+        }
         self.write("</letStatement>\n");
+    }
+
+    // ( '[' expression ']')
+    fn compile_base_plus_index(&mut self, name: &str) {
+        self.vm_push_variable(name); // push array ptr onyto stack
+        self.terminal();
+        self.compile_expression();
+        self.require(token::RBRACKET);
+        self.vm_writer.write_arithm(Command::ADD); // top stack value = RAM address of arr[expression]
+    }
+
+    fn pop_array_element(&mut self) {
+        self.vm_writer.write_pop(Segment::TEMP, 1); //pop expr value to temp reg
+        self.vm_writer.write_pop(Segment::POINTER, 1); //pop base+index into 'that' register
+        self.vm_writer.write_push(Segment::TEMP, 1); // push expr backonot stack
+        self.vm_writer.write_pop(Segment::THAT, 0); // pop value into *(base+index)
     }
 
     fn compile_while(&mut self) {
@@ -255,6 +330,8 @@ impl Parser {
         self.require(token::RETURN); //return keyword'
         if !self.peek_token_is(token::SEMICOLON) {
             self.compile_expression();
+        } else {
+            self.vm_writer.write_push(Segment::CONST, 0); // push 0 if type void
         }
         self.require(token::SEMICOLON); //-> semicolon
         self.vm_writer.write_return();
@@ -340,6 +417,19 @@ impl Parser {
         self.write("<term>\n");
         self.compile_term();
         while self.is_op() {
+            let op = self.peek_token.Literal.clone();
+            match op.as_str() {
+                "+" => self.vm_writer.write_arithm(Command::ADD),
+                "-" => self.vm_writer.write_arithm(Command::SUB),
+                "*" => self.vm_writer.write_arithm(Command::MUL),
+                "/" => self.vm_writer.write_arithm(Command::DIV),
+                "<" => self.vm_writer.write_arithm(Command::LT),
+                ">" => self.vm_writer.write_arithm(Command::GT),
+                "=" => self.vm_writer.write_arithm(Command::EQ),
+                "&" => self.vm_writer.write_arithm(Command::AND),
+                "|" => self.vm_writer.write_arithm(Command::OR),
+                _ => {}
+            }
             self.terminal(); // symbol operator
             self.write("<term>\n");
             self.compile_term();
@@ -360,32 +450,67 @@ impl Parser {
             self.compile_expression();
             self.require(token::RPAREN);
         } else if self.is_unary_op() {
+            let op = self.peek_token.Literal.clone();
             self.terminal();
             self.compile_term();
+            match op.as_str() {
+                "-" => self.vm_writer.write_arithm(Command::NEG),
+                "~" => self.vm_writer.write_arithm(Command::NOT),
+                _ => {}
+            }
         } else if self.is_ident() {
+            let name = self.peek_token.Literal.clone();
             self.terminal();
             if self.peek_token_is(token::LBRACKET) {
+                self.vm_push_variable(&name);
                 self.require(token::LBRACKET);
                 self.compile_expression();
                 self.require(token::RBRACKET);
+                self.vm_writer.write_arithm(Command::ADD);
+                self.vm_writer.write_pop(Segment::POINTER, 1);
+                self.vm_writer.write_push(Segment::THAT, 0);
             } else if self.peek_token_is(token::LPAREN) || self.peek_token_is(token::DOT) {
-                self.compile_subroutine_call();
+                self.compile_subroutine_call(&name);
             } else {
-                println!("shit!!\t: {:?}", self.peek_token.Type);
+                self.vm_push_variable(&name);
             }
         } else {
             println!("shit2\t : {:?}", self.peek_token.Type);
         }
     }
 
-    fn compile_subroutine_call(&mut self) {
+    fn compile_subroutine_call(&mut self, name: &str) {
+        let mut call_name = name;
+        let mut call_name_str: String;
+        let mut obj_name: String;
+        let mut new_name: String;
+        let mut call_nargs = 0u8;
+
         if self.peek_token_is(token::DOT) {
+            obj_name = String::from(name);
             self.require(token::DOT);
             self.require(token::IDENT);
+            new_name = self.cur_token.Literal.clone();
+            if let Some((typ, kind, index)) = self.s_table.lookup(name) {
+                call_nargs = 1;
+                self.vm_push_variable(&obj_name);
+                call_name_str = format!("{}.{}", self.s_table.type_of(&obj_name), new_name);
+                call_name = &call_name_str;
+            } else {
+                call_name_str = format!("{}.{}", obj_name, new_name);
+                call_name = &call_name_str;
+            }
+            self.require(token::IDENT);
+        } else {
+            call_nargs = 1;
+            self.vm_writer.write_push(Segment::POINTER, 0);
+            call_name_str = format!("{}.{}", self.class_name, name);
+            call_name = &call_name_str;
         }
         self.require(token::LPAREN);
-        self.compile_expression_list();
+        call_nargs += self.compile_expression_list();
         self.require(token::RPAREN);
+        self.vm_writer.write_call(call_name, call_nargs);
     }
 
     fn terminal(&mut self) {
@@ -421,27 +546,34 @@ impl Parser {
             }
             TokenKind::StringC(s) => {
                 let s = format!("<stringConstant> {} </stringConstant>\n", &s);
+                self.write_string_const(&s);
                 self.write(&s);
             }
             TokenKind::Identifier(s) => {
                 let s = format!("<identifier> {} </identifier>\n", &s);
+
                 self.write(&s);
             }
         }
     }
 
-    fn compile_expression_list(&mut self) {
+    fn compile_expression_list(&mut self) -> u8 {
         // compiles a (possibly empty) comma-
         // separated list of expressions.
+        let mut n_args = 0u8;
         self.write("<expressionList>\n");
         self.compile_expression();
+        n_args = 1;
         while self.peek_token_is(token::COMMA) {
             self.terminal();
             self.compile_expression();
+            n_args += 1;
         }
 
         self.write("</expressionList>\n");
+        n_args
     }
+
     fn next_token(&mut self) {
         if let Some(t) = self.lex.next_token() {
             self.cur_token = self.peek_token.clone();
@@ -515,6 +647,15 @@ impl Parser {
         } else {
             // false and null
             self.vm_writer.write_push(Segment::CONST, 0);
+        }
+    }
+
+    fn write_string_const(&mut self, val: &str) {
+        self.vm_writer.write_push(Segment::CONST, val.len() as u8);
+        self.vm_writer.write_call("String.new", 1);
+        for ch in val.as_bytes() {
+            self.vm_writer.write_push(Segment::CONST, *ch);
+            self.vm_writer.write_call("String.appendChar", 2)
         }
     }
 

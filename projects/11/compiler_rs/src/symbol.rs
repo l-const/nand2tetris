@@ -98,7 +98,7 @@ impl SymbolTable {
         }
     }
 
-    fn var_count(&self, kind: IdKind) -> u8 {
+    pub(crate) fn var_count(&self, kind: IdKind) -> u8 {
         // Returns the number of variables of the
         //given kind already defined in the current
         //scope.
@@ -121,7 +121,7 @@ impl SymbolTable {
         self.lookup(name).unwrap().1
     }
 
-    fn type_of(&self, name: &str) -> &str {
+    pub(crate) fn type_of(&self, name: &str) -> &str {
         // Returns the type of the named identifier in
         //the current scope.
         &self.lookup(name).unwrap().0
@@ -132,7 +132,7 @@ impl SymbolTable {
         self.lookup(name).unwrap().2
     }
 
-    fn lookup(&self, name: &str) -> Option<&(String, IdKind, u8)> {
+    pub(crate) fn lookup(&self, name: &str) -> Option<&(String, IdKind, u8)> {
         if let Some(t) = self.method_table.get(name) {
             Some(t)
         } else if let Some(t) = self.class_table.get(name) {
